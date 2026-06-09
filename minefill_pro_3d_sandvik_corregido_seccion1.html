@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MineFill Pro 3D Datamine - Análisis de Sensibilidad de Avance</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+<style>
+:root{
+  --bg:#050912;--panel:#0e1724;--panel2:#142235;--panel3:#1b2e46;
+  --gold:#f5c542;--gold2:#c99100;--cyan:#4fc3f7;--green:#2ecc71;--red:#ff5e5e;--orange:#ffb84d;
+  --text:#f5f8fc;--muted:#aebed0;--line:#2d4059;--white:#ffffff;
+}
+*{box-sizing:border-box;font-family:Inter,Arial,Helvetica,sans-serif}
+html{scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(circle at 20% 0%,#183050 0,#050912 42%);color:var(--text)}
+.app{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+aside{
+  position:sticky;top:0;height:100vh;background:rgba(5,9,18,.95);border-right:1px solid var(--line);
+  padding:18px;overflow:auto;backdrop-filter:blur(10px)
+}
+.logo{
+  border:1px solid var(--line);border-radius:16px;padding:16px;background:linear-gradient(135deg,#111d2e,#1e3553);
+  margin-bottom:16px
+}
+.logo h1{font-size:21px;margin:0;color:var(--gold);letter-spacing:.5px}
+.logo p{margin:8px 0 0;color:var(--muted);font-size:13px;line-height:1.35}
+.nav a{
+  display:block;color:#eaf2fb;text-decoration:none;padding:10px 12px;border-radius:10px;margin:6px 0;
+  background:#0d1724;border:1px solid transparent;font-size:14px
+}
+.nav a:hover{border-color:var(--gold);background:#17273b}
+.main{padding:22px;max-width:1600px;width:100%;margin:auto}
+.hero{
+  background:linear-gradient(135deg,#0d1724 0%,#1e3553 55%,#b78900 100%);
+  border:1px solid var(--line);border-radius:22px;padding:26px;margin-bottom:20px;box-shadow:0 15px 35px rgba(0,0,0,.35)
+}
+.hero h2{margin:0;font-size:30px;text-transform:uppercase;letter-spacing:.7px}
+.hero p{max-width:1080px;line-height:1.58;color:#fff;margin-bottom:0}
+section{
+  background:rgba(14,23,36,.96);border:1px solid var(--line);border-radius:20px;
+  padding:22px;margin-bottom:20px;box-shadow:0 10px 28px rgba(0,0,0,.25)
+}
+h3{margin:0 0 14px;color:var(--gold);font-size:22px;border-bottom:1px solid var(--line);padding-bottom:9px}
+h4{color:#ffe59a;margin:18px 0 10px}
+p,li{line-height:1.6;color:#e6eef8}
+small{display:block;color:var(--muted);font-size:12px;margin-top:5px;line-height:1.28}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px}
+.inputBox{background:var(--panel2);border:1px solid var(--line);padding:12px;border-radius:14px}
+label{display:block;font-weight:800;font-size:13px;margin-bottom:7px;color:#fff}
+input,select{
+  width:100%;padding:10px;border-radius:9px;border:1px solid #4a6078;background:#eef4fb;color:#0b1117;font-size:14.5px
+}
+button{
+  border:none;border-radius:11px;padding:12px 16px;font-weight:900;cursor:pointer;background:var(--gold);color:#111;margin:7px 5px 0 0
+}
+button:hover{filter:brightness(1.08)}
+button.blue{background:var(--cyan)}button.green{background:var(--green)}button.red{background:var(--red);color:#fff}
+.two{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px}
+.card{background:#070e18;border:1px solid var(--line);border-radius:16px;padding:15px;text-align:center;position:relative;overflow:hidden}
+.card:before{content:"";position:absolute;top:0;left:0;width:100%;height:4px;background:var(--gold)}
+.card h5{margin:0;color:var(--muted);font-size:12.5px}
+.card .value{font-size:23px;font-weight:950;color:#fff;margin-top:7px}
+.card .tag{font-size:11.5px;color:#a9b8c8;margin-top:3px}
+.note{background:#08111d;border-left:4px solid var(--gold);padding:14px;border-radius:12px;margin-top:12px;color:#eaf2fb;line-height:1.58}
+#viewer3d{height:560px;background:#010409;border-radius:18px;border:1px solid #29425e;overflow:hidden;position:relative}
+.overlay3d{
+  position:absolute;z-index:4;left:14px;top:14px;background:rgba(0,0,0,.56);border:1px solid rgba(255,255,255,.14);
+  padding:12px;border-radius:13px;max-width:340px;font-size:13px;color:#eaf2fb
+}
+.overlay3d b{color:var(--gold)}
+.controls3d{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#08111d;border:1px solid var(--line);
+  border-radius:14px;padding:12px;margin-top:10px
+}
+.controls3d input[type=range]{width:260px}
+.controls3d select{width:auto;min-width:96px;padding:10px 12px}
+.badge{display:inline-block;background:#16283d;border:1px solid #355577;border-radius:999px;padding:5px 9px;font-size:12px;color:#eaf2fb}
+table{width:100%;border-collapse:collapse;background:#070e18;margin-top:12px;border-radius:12px;overflow:hidden}
+th,td{border:1px solid var(--line);padding:9px;text-align:center;font-size:13px}
+th{background:var(--gold2);color:#111}
+td.left{text-align:left}
+.good{color:var(--green);font-weight:900}.warn{color:var(--gold);font-weight:900}.bad{color:var(--red);font-weight:900}
+.chart{background:#fff;border-radius:14px;padding:12px;margin-top:12px;min-height:300px}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px}
+.step{background:#07111d;border:1px solid var(--gold);border-radius:14px;padding:13px;text-align:center;min-height:78px;display:flex;align-items:center;justify-content:center;flex-direction:column}
+.step b{color:var(--gold);font-size:20px}
+.progressOuter{background:#07111d;border:1px solid var(--line);border-radius:999px;height:28px;overflow:hidden;margin:12px 0}
+.progressInner{height:100%;background:linear-gradient(90deg,var(--cyan),var(--gold));width:0%;display:flex;align-items:center;justify-content:center;color:#071018;font-weight:900;font-size:13px}
+.report{background:#f8fbff;color:#111;border-radius:18px;padding:24px}
+.report h4,.report p,.report li{color:#111}
+.report h4{border-bottom:2px solid #c99100;padding-bottom:7px}
+.reportGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.reportBox{background:white;border:1px solid #ccd6e2;border-radius:12px;padding:14px}
+.kpiBand{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px}
+.status{padding:12px;border-radius:14px;border:1px solid var(--line);background:#07111d;text-align:center}
+.status strong{font-size:21px;display:block;margin-top:5px}
+footer{text-align:center;color:#9fb0c3;padding:24px}
+@media(max-width:1100px){.app{grid-template-columns:1fr}aside{position:relative;height:auto}.two,.three,.reportGrid{grid-template-columns:1fr}#viewer3d{height:440px}}
+@media print{
+  .app{display:block}aside,button,.controls3d{display:none}
+  body{background:white;color:black}.main{padding:0}
+  section,.hero{box-shadow:none;border:1px solid #aaa;background:white;color:black;page-break-inside:avoid}
+  p,li,.note{color:black;background:white}.card,.step,.status,table{background:white;color:black}
+  .report{border:1px solid #aaa}#viewer3d{height:430px}
+}
+</style>
+
+<style>
+#viewer3d{background:#02070d!important;}
+#viewer3d canvas{display:block;}
+</style>
+</head>
+
+<body>
+<div class="app">
+<aside>
+  <div class="logo">
+    <h1>MineFill Pro 3D</h1>
+    <p>Simulador académico de secuencia de llenado y sensibilidad operacional.</p>
+  </div>
+  <div class="nav">
+    <a href="#vista">Vista 3D</a>
+    <a href="#variables">Variables</a>
+    <a href="#resultados">Resultados</a>
+    <a href="#secuencia">Secuencia</a>
+    <a href="#sensibilidad">Sensibilidad</a>
+    <a href="#escenarios">Escenarios</a>
+    <a href="#matriz">Matriz</a>
+    <a href="#informe">Informe</a>
+  </div>
+  <div class="note">
+    <b>Uso:</b> modifica variables, calcula, anima el llenado y exporta el reporte o CSV.
+  </div>
+</aside>
+
+<div class="main">
+  <div class="hero">
+    <h2>Análisis de sensibilidad de la secuencia de llenado</h2>
+    <p>
+      Modelo integral para minería subterránea con tajeo 3D, relleno en pasta cementada,
+      limpieza con LHD, esponjamiento, bombeo, curado, costos, escenarios, matriz de criticidad e informe técnico automático.
+    </p>
+  </div>
+
+  <section id="vista">
+    <h3>1. Visualización 3D del tajo, rampa ascendente y dumper</h3>
+    <div class="two">
+      <div>
+        <div id="viewer3d">
+          <div class="overlay3d">
+            <b>Modelo 3D Datamine + rampa calculada</b><br>
+            Curvas Phase3 importadas desde DXF. La rampa fue trazada entre curvas reales del tajo para que el dumper suba por una banqueta operativa.
+            <br><br>
+            <span id="fillLabel3d">Ciclo listo: 0%</span>
+          </div>
+        </div>
+        <div class="controls3d">
+          <label style="margin:0">Carga</label>
+          <input id="fillRange" type="range" min="0" max="100" value="0" oninput="actualizarFill3D(this.value)">
+          <span class="badge" id="fillBadge">0%</span>
+          <button id="sequenceBtn" onclick="animarAvance()" class="green">Cargar y subir</button>
+          <label for="speedSelect" style="margin:0">Velocidad</label>
+          <select id="speedSelect">
+            <option value="0.5">0.5x</option>
+            <option value="1" selected>1x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2x</option>
+          </select>
+          <button onclick="resetCamara()" class="blue">Reset cámara</button>
+          <span class="badge" id="sequenceStatus">Listo para simular</span>
+        </div>
+      </div>
+      <div>
+        <h4>Lectura técnica del 3D</h4>
+        <p>La visualización muestra la topografía Datamine, la rampa calculada y un dumper que primero carga el volumen y luego sube por la ruta.</p>
+        <div class="cards">
+          <div class="card"><h5>Volumen cargado</h5><div class="value" id="k3dColocado">-</div><div class="tag">m³</div></div>
+          <div class="card"><h5>Volumen pendiente</h5><div class="value" id="k3dPendiente">-</div><div class="tag">m³</div></div>
+          <div class="card"><h5>Tiempo de ciclo</h5><div class="value" id="k3dTiempo">-</div><div class="tag">h</div></div>
+          <div class="card"><h5>Avance operativo</h5><div class="value" id="k3dAvance">0%</div><div class="tag">carga + ruta</div></div>
+        </div>
+        <div class="progressOuter"><div class="progressInner" id="progressFill">0%</div></div>
+        <div class="note">
+          <span class="badge">Cian: curvas Datamine</span>
+          <span class="badge">Amarillo: rampa calculada</span>
+          <span class="badge">Naranja: dumper en ruta</span>
+          <span class="badge">Amarillo equipo: pala de carguío</span>
+          <span class="badge">Marrón: carga simulada</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="variables">
+    <h3>2. Variables de entrada</h3>
+    <h4>2.1 Geometría, dilución y recuperación</h4>
+    <div class="grid">
+      <div class="inputBox"><label>Largo del tajeo (m)</label><input id="largo" type="number" value="35" step="0.1"><small>Longitud del bloque explotado.</small></div>
+      <div class="inputBox"><label>Ancho del tajeo (m)</label><input id="ancho" type="number" value="8" step="0.1"><small>Afecta estabilidad y volumen.</small></div>
+      <div class="inputBox"><label>Altura del tajeo (m)</label><input id="altura" type="number" value="22" step="0.1"><small>Altura del vacío a rellenar.</small></div>
+      <div class="inputBox"><label>Dilución (%)</label><input id="dilucion" type="number" value="8" step="0.1"></div>
+      <div class="inputBox"><label>Recuperación minera (%)</label><input id="recuperacion" type="number" value="92" step="0.1"></div>
+      <div class="inputBox"><label>Sobrellenado (%)</label><input id="sobrellenado" type="number" value="5" step="0.1"></div>
+    </div>
+
+    <h4>2.2 Roca, mineral roto y LHD</h4>
+    <div class="grid">
+      <div class="inputBox"><label>Densidad roca in situ (t/m³)</label><input id="densidadRoca" type="number" value="2.75" step="0.01"></div>
+      <div class="inputBox"><label>Esponjamiento (%)</label><input id="esponjamiento" type="number" value="55" step="0.1"></div>
+      <div class="inputBox"><label>Capacidad LHD (m³)</label><input id="capacidadLHD" type="number" value="6" step="0.1"></div>
+      <div class="inputBox"><label>Factor llenado LHD (%)</label><input id="fillFactorLHD" type="number" value="85" step="0.1"></div>
+      <div class="inputBox"><label>Capacidad cuchara pala (m³)</label><input id="capacidadCuchara" type="number" value="4.5" step="0.1"></div>
+      <div class="inputBox"><label>Factor llenado cuchara (%)</label><input id="fillFactorCuchara" type="number" value="90" step="0.1"></div>
+      <div class="inputBox"><label>Distancia acarreo ida (m)</label><input id="distLHD" type="number" value="180" step="1"></div>
+      <div class="inputBox"><label>Velocidad cargado (km/h)</label><input id="velCargado" type="number" value="7" step="0.1"></div>
+      <div class="inputBox"><label>Velocidad vacío (km/h)</label><input id="velVacio" type="number" value="9" step="0.1"></div>
+      <div class="inputBox"><label>Tiempo fijo LHD (min/ciclo)</label><input id="tiempoFijoLHD" type="number" value="3.5" step="0.1"></div>
+      <div class="inputBox"><label>Consumo combustible LHD (L/h)</label><input id="consumoCombustible" type="number" value="28" step="0.1"></div>
+      <div class="inputBox"><label>Disponibilidad LHD (%)</label><input id="dispLHD" type="number" value="88" step="0.1"></div>
+      <div class="inputBox"><label>Eficiencia limpieza (%)</label><input id="efLimpieza" type="number" value="82" step="0.1"></div>
+    </div>
+
+    <h4>2.3 Preparación, relleno y bombeo</h4>
+    <div class="grid">
+      <div class="inputBox"><label>Sostenimiento (h)</label><input id="tSostenimiento" type="number" value="10" step="0.1"></div>
+      <div class="inputBox"><label>Inspección geomecánica (h)</label><input id="tInspeccion" type="number" value="2" step="0.1"></div>
+      <div class="inputBox"><label>Barricada (h)</label><input id="tBarricada" type="number" value="8" step="0.1"></div>
+      <div class="inputBox"><label>Conexión tubería (h)</label><input id="tTuberia" type="number" value="4" step="0.1"></div>
+      <div class="inputBox"><label>Densidad mezcla (t/m³)</label><input id="densidadMezcla" type="number" value="1.95" step="0.01"></div>
+      <div class="inputBox"><label>Sólidos (%)</label><input id="solidos" type="number" value="75" step="0.1"></div>
+      <div class="inputBox"><label>Cemento sobre sólidos (%)</label><input id="cemento" type="number" value="6" step="0.1"></div>
+      <div class="inputBox"><label>Slump (mm)</label><input id="slump" type="number" value="230" step="1"></div>
+      <div class="inputBox"><label>Yield stress (Pa)</label><input id="yieldStress" type="number" value="250" step="1"></div>
+      <div class="inputBox"><label>UCS requerida (MPa)</label><input id="ucsReq" type="number" value="1" step="0.05"></div>
+      <div class="inputBox"><label>UCS estimada (MPa)</label><input id="ucsEst" type="number" value="1.25" step="0.05"></div>
+      <div class="inputBox"><label>Curado (días)</label><input id="curado" type="number" value="3" step="0.1"></div>
+      <div class="inputBox"><label>Caudal bomba (m³/h)</label><input id="caudal" type="number" value="120" step="0.1"></div>
+      <div class="inputBox"><label>Disponibilidad bomba (%)</label><input id="dispBomba" type="number" value="90" step="0.1"></div>
+      <div class="inputBox"><label>Eficiencia bombeo (%)</label><input id="efBombeo" type="number" value="85" step="0.1"></div>
+      <div class="inputBox"><label>Disponibilidad planta (%)</label><input id="dispPlanta" type="number" value="92" step="0.1"></div>
+      <div class="inputBox"><label>Longitud tubería (m)</label><input id="longTuberia" type="number" value="850" step="1"></div>
+      <div class="inputBox"><label>Diámetro tubería (mm)</label><input id="diametro" type="number" value="150" step="1"></div>
+      <div class="inputBox"><label>Horas efectivas/día</label><input id="horasDia" type="number" value="20" step="0.1"></div>
+    </div>
+
+    <h4>2.4 Costos</h4>
+    <div class="grid">
+      <div class="inputBox"><label>Costo cemento (US$/t)</label><input id="costoCemento" type="number" value="145" step="1"></div>
+      <div class="inputBox"><label>Costo bomba (US$/h)</label><input id="costoBomba" type="number" value="180" step="1"></div>
+      <div class="inputBox"><label>Costo LHD (US$/h)</label><input id="costoLHD" type="number" value="125" step="1"></div>
+      <div class="inputBox"><label>Costo combustible (US$/L)</label><input id="costoCombustible" type="number" value="1.15" step="0.01"></div>
+      <div class="inputBox"><label>Costo preparación (US$)</label><input id="costoPrep" type="number" value="3800" step="10"></div>
+    </div>
+
+    <button onclick="calcularTodo()">Calcular dashboard</button>
+    <button class="blue" onclick="cargarEscenario('conservador')">Escenario conservador</button>
+    <button class="blue" onclick="cargarEscenario('base')">Escenario base</button>
+    <button class="blue" onclick="cargarEscenario('optimista')">Escenario optimista</button>
+    <button class="green" onclick="exportarCSV()">Exportar CSV</button>
+    <button class="green" onclick="window.print()">Guardar PDF</button>
+  </section>
+
+  <section id="resultados">
+    <h3>3. Resultados principales y semáforo técnico</h3>
+    <div class="kpiBand">
+      <div class="status"><span>Estado geomecánico</span><strong id="estadoGeo">-</strong></div>
+      <div class="status"><span>Estado bombeo</span><strong id="estadoBombeo">-</strong></div>
+      <div class="status"><span>Criticidad ciclo</span><strong id="estadoCiclo">-</strong></div>
+      <div class="status"><span>Condición económica</span><strong id="estadoCosto">-</strong></div>
+    </div>
+
+    <div class="cards">
+      <div class="card"><h5>Volumen geométrico</h5><div class="value" id="kVolGeo">-</div><div class="tag">m³</div></div>
+      <div class="card"><h5>Tonelaje in situ</h5><div class="value" id="kTon">-</div><div class="tag">t</div></div>
+      <div class="card"><h5>Volumen roto</h5><div class="value" id="kVolRoto">-</div><div class="tag">m³ sueltos</div></div>
+      <div class="card"><h5>Densidad suelta</h5><div class="value" id="kDensSuelta">-</div><div class="tag">t/m³</div></div>
+      <div class="card"><h5>Viajes LHD</h5><div class="value" id="kViajes">-</div><div class="tag">viajes</div></div>
+      <div class="card"><h5>Cuchara efectiva</h5><div class="value" id="kCucharaEf">-</div><div class="tag">m³/pase</div></div>
+      <div class="card"><h5>Pases por dumper</h5><div class="value" id="kPasesCuchara">-</div><div class="tag">pases</div></div>
+      <div class="card"><h5>Tiempo limpieza</h5><div class="value" id="kTLimpieza">-</div><div class="tag">h</div></div>
+      <div class="card"><h5>Combustible LHD</h5><div class="value" id="kCombustible">-</div><div class="tag">L</div></div>
+      <div class="card"><h5>Volumen relleno</h5><div class="value" id="kVolRelleno">-</div><div class="tag">m³</div></div>
+      <div class="card"><h5>Cemento</h5><div class="value" id="kCemento">-</div><div class="tag">t</div></div>
+      <div class="card"><h5>Agua estimada</h5><div class="value" id="kAgua">-</div><div class="tag">m³</div></div>
+      <div class="card"><h5>Caudal efectivo</h5><div class="value" id="kCaudalEf">-</div><div class="tag">m³/h</div></div>
+      <div class="card"><h5>Tiempo bombeo</h5><div class="value" id="kTBombeo">-</div><div class="tag">h</div></div>
+      <div class="card"><h5>Ciclo total</h5><div class="value" id="kCiclo">-</div><div class="tag">días</div></div>
+      <div class="card"><h5>Costo total</h5><div class="value" id="kCosto">-</div><div class="tag">US$</div></div>
+      <div class="card"><h5>Costo unitario</h5><div class="value" id="kCostoM3">-</div><div class="tag">US$/m³</div></div>
+    </div>
+    <div class="note" id="alertas">Calcula el dashboard para mostrar alertas.</div>
+  </section>
+
+  <section id="secuencia">
+    <h3>4. Secuencia producción–relleno</h3>
+    <div class="flow">
+      <div class="step"><b>1</b>Perforación y voladura</div><div class="step"><b>2</b>Esponjamiento</div>
+      <div class="step"><b>3</b>Limpieza LHD</div><div class="step"><b>4</b>Sostenimiento</div>
+      <div class="step"><b>5</b>Inspección</div><div class="step"><b>6</b>Barricada</div>
+      <div class="step"><b>7</b>Tubería</div><div class="step"><b>8</b>Bombeo</div>
+      <div class="step"><b>9</b>Curado</div><div class="step"><b>10</b>Liberación</div>
+    </div>
+    <table>
+      <thead><tr><th>Actividad</th><th>Duración</th><th>Dependencia</th><th>Impacto técnico</th></tr></thead>
+      <tbody id="tablaSecuencia"></tbody>
+    </table>
+  </section>
+
+  <section id="sensibilidad">
+    <h3>5. Análisis de sensibilidad</h3>
+    <p>El sistema varía cada input en ±20% y mide el impacto sobre el ciclo total. Esto permite identificar las variables más críticas para la planificación.</p>
+    <div class="two">
+      <div>
+        <table>
+          <thead><tr><th>Variable</th><th>-20%</th><th>+20%</th><th>Impacto</th><th>Nivel</th></tr></thead>
+          <tbody id="tablaSensibilidad"></tbody>
+        </table>
+      </div>
+      <div><canvas id="graficoTornado" class="chart"></canvas></div>
+    </div>
+    <div class="three">
+      <canvas id="graficoCaudal" class="chart"></canvas>
+      <canvas id="graficoSolidos" class="chart"></canvas>
+      <canvas id="graficoCemento" class="chart"></canvas>
+    </div>
+  </section>
+
+  <section id="escenarios">
+    <h3>6. Escenarios operacionales</h3>
+    <table>
+      <thead><tr><th>Escenario</th><th>Caudal efectivo</th><th>Limpieza</th><th>Bombeo</th><th>Ciclo</th><th>Costo</th><th>Interpretación</th></tr></thead>
+      <tbody id="tablaEscenarios"></tbody>
+    </table>
+    <canvas id="graficoEscenarios" class="chart"></canvas>
+  </section>
+
+  <section id="matriz">
+    <h3>7. Matriz de criticidad de variables</h3>
+    <p>Clasificación cualitativa según impacto en tiempo, costo y seguridad operacional.</p>
+    <table>
+      <thead><tr><th>Variable</th><th>Tiempo</th><th>Costo</th><th>Seguridad/Geomecánica</th><th>Prioridad</th><th>Acción recomendada</th></tr></thead>
+      <tbody id="tablaMatriz"></tbody>
+    </table>
+  </section>
+
+  <section id="informe">
+    <h3>8. Informe técnico automático</h3>
+    <div class="report">
+      <div class="reportGrid">
+        <div class="reportBox"><h4>Resumen ejecutivo</h4><p id="resumenInforme">-</p></div>
+        <div class="reportBox"><h4>Variables críticas</h4><p id="criticasInforme">-</p></div>
+        <div class="reportBox"><h4>Interpretación geomecánica</h4><p id="geoInforme">-</p></div>
+        <div class="reportBox"><h4>Conclusiones</h4><ul id="conclusionesInforme"></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>MineFill Pro 3D | Dashboard académico para Ingeniería de Minas</footer>
+</div>
+</div>
+
+<script>
+let scene,camera,renderer,controls,fillMesh,stopeWire,pipeMesh,barricadeMesh,rockGroup,pitGroup,charts={},latest=null,animTimer=null;
+const base={
+  largo:35,ancho:8,altura:22,dilucion:8,recuperacion:92,sobrellenado:5,densidadRoca:2.75,esponjamiento:55,
+  capacidadLHD:6,fillFactorLHD:85,capacidadCuchara:4.5,fillFactorCuchara:90,distLHD:180,velCargado:7,velVacio:9,tiempoFijoLHD:3.5,consumoCombustible:28,dispLHD:88,efLimpieza:82,
+  tSostenimiento:10,tInspeccion:2,tBarricada:8,tTuberia:4,densidadMezcla:1.95,solidos:75,cemento:6,slump:230,yieldStress:250,
+  ucsReq:1,ucsEst:1.25,curado:3,caudal:120,dispBomba:90,efBombeo:85,dispPlanta:92,longTuberia:850,diametro:150,horasDia:20,
+  costoCemento:145,costoBomba:180,costoLHD:125,costoCombustible:1.15,costoPrep:3800
+};
+const ids=Object.keys(base);
+const lab={largo:"Largo",ancho:"Ancho",altura:"Altura",dilucion:"Dilución",recuperacion:"Recuperación",sobrellenado:"Sobrellenado",densidadRoca:"Densidad roca",esponjamiento:"Esponjamiento",capacidadLHD:"Capacidad LHD",fillFactorLHD:"Factor llenado LHD",capacidadCuchara:"Capacidad cuchara",fillFactorCuchara:"Factor llenado cuchara",distLHD:"Distancia LHD",velCargado:"Velocidad cargado",velVacio:"Velocidad vacío",tiempoFijoLHD:"Tiempo fijo LHD",consumoCombustible:"Consumo combustible",dispLHD:"Disponibilidad LHD",efLimpieza:"Eficiencia limpieza",tSostenimiento:"Sostenimiento",tInspeccion:"Inspección",tBarricada:"Barricada",tTuberia:"Tubería",densidadMezcla:"Densidad mezcla",solidos:"Sólidos",cemento:"Cemento",slump:"Slump",yieldStress:"Yield stress",ucsReq:"UCS requerida",ucsEst:"UCS estimada",curado:"Curado",caudal:"Caudal",dispBomba:"Disp. bomba",efBombeo:"Efic. bombeo",dispPlanta:"Disp. planta",longTuberia:"Long. tubería",diametro:"Diámetro",horasDia:"Horas/día",costoCemento:"Costo cemento",costoBomba:"Costo bomba",costoLHD:"Costo LHD",costoCombustible:"Costo combustible",costoPrep:"Costo preparación"};
+
+function v(id){return parseFloat(document.getElementById(id).value)}
+function setv(id,val){document.getElementById(id).value=val}
+function getX(){let x={};ids.forEach(id=>x[id]=v(id));return x}
+function fmt(n,d=1){return Number(n).toLocaleString("es-PE",{maximumFractionDigits:d,minimumFractionDigits:d})}
+function fmt0(n){return Math.round(n).toLocaleString("es-PE")}
+
+function modelo(x){
+  const volGeo=x.largo*x.ancho*x.altura;
+  const volDil=volGeo*(1+x.dilucion/100);
+  const volRec=volDil*(x.recuperacion/100);
+  const ton=volRec*x.densidadRoca;
+  const volRoto=volRec*(1+x.esponjamiento/100);
+  const densSuelta=ton/volRoto;
+  const capReal=x.capacidadLHD*(x.fillFactorLHD/100);
+  const capCucharaReal=x.capacidadCuchara*(x.fillFactorCuchara/100);
+  const pasesCuchara=capReal/Math.max(capCucharaReal,.0001);
+  const viajes=volRoto/capReal;
+  const cicloLHD=((x.distLHD/1000)/x.velCargado*60)+((x.distLHD/1000)/x.velVacio*60)+x.tiempoFijoLHD;
+  const prodVol=(60/cicloLHD)*capReal*(x.dispLHD/100)*(x.efLimpieza/100);
+  const prodTon=prodVol*densSuelta;
+  const tLimpieza=volRoto/prodVol;
+  const volRelleno=volGeo*(1+x.sobrellenado/100);
+  const masaMezcla=volRelleno*x.densidadMezcla;
+  const masaSolidos=masaMezcla*(x.solidos/100);
+  const agua=Math.max(masaMezcla-masaSolidos,0);
+  const cementoT=masaSolidos*(x.cemento/100);
+  let factorRet=1;
+  factorRet*=Math.pow(850/Math.max(x.longTuberia,1),0.08);
+  factorRet*=Math.pow(x.diametro/150,0.18);
+  factorRet*=Math.pow(250/Math.max(x.yieldStress,1),0.06);
+  factorRet*=Math.pow(x.slump/230,0.04);
+  factorRet=Math.min(Math.max(factorRet,.62),1.28);
+  const caudalEf=x.caudal*(x.dispBomba/100)*(x.efBombeo/100)*(x.dispPlanta/100)*factorRet;
+  const tBombeo=volRelleno/caudalEf;
+  const area=Math.PI*Math.pow((x.diametro/1000)/2,2);
+  const velFlujo=(caudalEf/3600)/area;
+  const prep=x.tSostenimiento+x.tInspeccion+x.tBarricada+x.tTuberia;
+  const cicloHoras=tLimpieza+prep+tBombeo+x.curado*x.horasDia;
+  const cicloDias=cicloHoras/x.horasDia;
+  const combustible=tLimpieza*x.consumoCombustible;
+  const costo=cementoT*x.costoCemento+tBombeo*x.costoBomba+tLimpieza*x.costoLHD+combustible*x.costoCombustible+x.costoPrep;
+  return {volGeo,volDil,volRec,ton,volRoto,densSuelta,capReal,capCucharaReal,pasesCuchara,viajes,cicloLHD,prodVol,prodTon,tLimpieza,combustible,volRelleno,masaMezcla,masaSolidos,agua,cementoT,factorRet,caudalEf,tBombeo,velFlujo,prep,cicloHoras,cicloDias,costo,costoM3:costo/volRelleno,margenUCS:x.ucsEst-x.ucsReq};
+}
+
+function calcularTodo(){
+  const x=getX(),r=modelo(x);latest={x,r};
+  renderKPIs(x,r);renderSecuencia(x,r);renderSensibilidad(x,r);renderGraficos(x,r);renderEscenarios();renderMatriz(x,r);renderInforme(x,r);construir3D(x,r);actualizarFill3D(fillRange.value);
+}
+function estado(el,text,cls){el.innerHTML=`<span class="${cls}">${text}</span>`}
+function renderKPIs(x,r){
+  kVolGeo.innerText=fmt0(r.volGeo);kTon.innerText=fmt0(r.ton);kVolRoto.innerText=fmt0(r.volRoto);kDensSuelta.innerText=fmt(r.densSuelta,2);
+  kViajes.innerText=fmt0(r.viajes);kTLimpieza.innerText=fmt(r.tLimpieza,1);kVolRelleno.innerText=fmt0(r.volRelleno);kCemento.innerText=fmt(r.cementoT,1);
+  kCucharaEf.innerText=fmt(r.capCucharaReal,2);kPasesCuchara.innerText=fmt(r.pasesCuchara,1);kCombustible.innerText=fmt0(r.combustible);
+  kAgua.innerText=fmt(r.agua,1);kCaudalEf.innerText=fmt(r.caudalEf,1);kTBombeo.innerText=fmt(r.tBombeo,1);kCiclo.innerText=fmt(r.cicloDias,2);
+  kCosto.innerText="US$ "+fmt0(r.costo);kCostoM3.innerText=fmt(r.costoM3,2);
+  estado(estadoGeo,r.margenUCS>=0?"Aceptable":"Crítico",r.margenUCS>=0?"good":"bad");
+  estado(estadoBombeo,(r.velFlujo>=1&&r.velFlujo<=4)?"Estable":"Revisar",(r.velFlujo>=1&&r.velFlujo<=4)?"good":"warn");
+  estado(estadoCiclo,r.cicloDias<6?"Bajo":r.cicloDias<9?"Medio":"Alto",r.cicloDias<6?"good":r.cicloDias<9?"warn":"bad");
+  estado(estadoCosto,r.costoM3<35?"Bajo":r.costoM3<55?"Medio":"Alto",r.costoM3<35?"good":r.costoM3<55?"warn":"bad");
+  let a=[];
+  a.push(r.margenUCS>=0?`<span class="good">UCS cumple con margen de ${fmt(r.margenUCS,2)} MPa.</span>`:`<span class="bad">UCS insuficiente: falta ${fmt(Math.abs(r.margenUCS),2)} MPa.</span>`);
+  if(x.esponjamiento>60)a.push(`<span class="warn">Esponjamiento alto: eleva viajes LHD y tiempo de limpieza.</span>`);
+  if(r.velFlujo<1||r.velFlujo>4)a.push(`<span class="warn">Velocidad en tubería ${fmt(r.velFlujo,2)} m/s: revisar bombeabilidad.</span>`);
+  if(x.cemento>8)a.push(`<span class="warn">Cemento elevado: revisar costo unitario.</span>`);
+  alertas.innerHTML="<strong>Diagnóstico:</strong><br>"+a.join("<br>");
+}
+function renderSecuencia(x,r){
+  let rows=[
+    ["Perforación y voladura","Según plan","Inicio","Genera fragmentación y volumen roto"],
+    ["Limpieza LHD",fmt(r.tLimpieza,1)+" h","Voladura","Libera el tajeo para preparar relleno"],
+    ["Sostenimiento",fmt(x.tSostenimiento,1)+" h","Limpieza","Control local de estabilidad"],
+    ["Inspección geomecánica",fmt(x.tInspeccion,1)+" h","Sostenimiento","Autoriza ingreso y relleno"],
+    ["Barricada",fmt(x.tBarricada,1)+" h","Inspección","Contiene la pasta cementada"],
+    ["Conexión tubería",fmt(x.tTuberia,1)+" h","Barricada","Habilita bombeo"],
+    ["Bombeo",fmt(r.tBombeo,1)+" h","Tubería","Llena el vacío"],
+    ["Curado",fmt(x.curado*x.horasDia,1)+" h","Bombeo","Genera resistencia inicial"],
+    ["Liberación",fmt(r.cicloDias,2)+" días","Curado","Permite tajeo adyacente"]
+  ];
+  tablaSecuencia.innerHTML=rows.map(z=>`<tr><td class="left">${z[0]}</td><td>${z[1]}</td><td>${z[2]}</td><td class="left">${z[3]}</td></tr>`).join("");
+}
+function renderSensibilidad(x,r){
+  let data=[];
+  ids.forEach(id=>{
+    let xm={...x},xp={...x};xm[id]=Math.max(x[id]*.8,.0001);xp[id]=Math.max(x[id]*1.2,.0001);
+    const rm=modelo(xm),rp=modelo(xp),impacto=Math.abs(rp.cicloDias-rm.cicloDias);
+    data.push({id,label:lab[id],minus:rm.cicloDias,plus:rp.cicloDias,impacto});
+  });
+  data.sort((a,b)=>b.impacto-a.impacto);latest.sens=data;
+  const top=data.slice(0,14);
+  tablaSensibilidad.innerHTML=top.map((d,i)=>{
+    const nivel=i<5?"Alta":i<10?"Media":"Baja", cls=i<5?"bad":i<10?"warn":"good";
+    return `<tr><td class="left">${d.label}</td><td>${fmt(d.minus,2)}</td><td>${fmt(d.plus,2)}</td><td>${fmt(d.impacto,2)} días</td><td class="${cls}">${nivel}</td></tr>`;
+  }).join("");
+  mkChart("graficoTornado","bar",top.map(d=>d.label).reverse(),[{label:"Impacto en ciclo total (días)",data:top.map(d=>d.impacto).reverse(),borderWidth:1}],"Gráfico tornado de criticidad","Días");
+}
+function renderGraficos(x,r){
+  const qs=[70,90,110,130,150,170];
+  mkChart("graficoCaudal","line",qs,[{label:"Tiempo bombeo (h)",data:qs.map(q=>modelo({...x,caudal:q}).tBombeo),borderWidth:3,tension:.25}],"Caudal vs tiempo de bombeo","Horas");
+  const ss=[68,70,72,75,78,80];
+  mkChart("graficoSolidos","line",ss,[{label:"Tiempo bombeo (h)",data:ss.map(s=>modelo({...x,solidos:s,caudal:x.caudal*(1-(s-75)*.018),densidadMezcla:x.densidadMezcla+(s-75)*.018,yieldStress:x.yieldStress+(s-75)*18}).tBombeo),borderWidth:3,tension:.25}],"Sólidos vs bombeabilidad","Horas");
+  const cc=[3,4,5,6,7,8,9,10];
+  mkChart("graficoCemento","line",cc,[{label:"Costo total (US$)",data:cc.map(c=>modelo({...x,cemento:c}).costo),borderWidth:3,tension:.25}],"Cemento vs costo total","US$");
+}
+function renderEscenarios(){
+  const x=getX(),esc={"Conservador":{...x,caudal:95,dispBomba:84,efBombeo:78,dispPlanta:86,esponjamiento:65,efLimpieza:75,curado:4,dilucion:12,sobrellenado:8},"Base":{...x},"Optimista":{...x,caudal:145,dispBomba:94,efBombeo:90,dispPlanta:95,esponjamiento:45,efLimpieza:88,curado:2.5,dilucion:5,sobrellenado:3}};
+  let rows=[],labs=[],ciclos=[],costos=[];
+  Object.entries(esc).forEach(([n,e])=>{const r=modelo(e);labs.push(n);ciclos.push(r.cicloDias);costos.push(r.costo/1000);let int=n==="Conservador"?"Mayor riesgo de retraso y sobrecosto.":n==="Base"?"Condición esperada de planificación.":"Menor ciclo y mejor continuidad.";rows.push(`<tr><td>${n}</td><td>${fmt(r.caudalEf,1)} m³/h</td><td>${fmt(r.tLimpieza,1)} h</td><td>${fmt(r.tBombeo,1)} h</td><td>${fmt(r.cicloDias,2)} días</td><td>US$ ${fmt0(r.costo)}</td><td class="left">${int}</td></tr>`)});
+  tablaEscenarios.innerHTML=rows.join("");
+  mkChart("graficoEscenarios","bar",labs,[{label:"Ciclo total (días)",data:ciclos,borderWidth:1},{label:"Costo total (miles US$)",data:costos,borderWidth:1}],"Escenarios operacionales","Valor");
+}
+function renderMatriz(x,r){
+  const top=(latest.sens||[]).slice(0,8);
+  tablaMatriz.innerHTML=top.map((d,i)=>{
+    const pr=i<3?"Alta":i<6?"Media":"Baja",cls=i<3?"bad":i<6?"warn":"good";
+    let accion="Monitorear y controlar en planificación diaria.";
+    if(d.id.includes("caudal")||d.id.includes("Bomba"))accion="Optimizar disponibilidad de bomba, revisar planta y reticulación.";
+    if(d.id.includes("esponjamiento")||d.id.includes("LHD"))accion="Mejorar fragmentación, ciclo LHD y rutas de acarreo.";
+    if(d.id.includes("curado")||d.id.includes("ucs"))accion="Validar resistencia, cemento y tiempo mínimo de liberación.";
+    return `<tr><td class="left">${d.label}</td><td>${fmt(d.impacto,2)} días</td><td>${d.id.includes("costo")||d.id.includes("cemento")?"Alto":"Medio"}</td><td>${d.id.includes("ucs")||d.id.includes("curado")?"Alto":"Medio"}</td><td class="${cls}">${pr}</td><td class="left">${accion}</td></tr>`
+  }).join("");
+}
+function renderInforme(x,r){
+  const top=latest.sens?.[0]?.label||"variable crítica";
+  resumenInforme.innerHTML=`El tajeo modelado presenta ${fmt0(r.volGeo)} m³ de volumen geométrico y requiere ${fmt0(r.volRelleno)} m³ de relleno en pasta cementada. El ciclo total de liberación estimado es ${fmt(r.cicloDias,2)} días, considerando limpieza, preparación, bombeo y curado.`;
+  criticasInforme.innerHTML=`La variable con mayor impacto en el ciclo total es <strong>${top}</strong>. Su control debe priorizarse para mejorar continuidad de producción y reducir retrasos.`;
+  geoInforme.innerHTML=`La UCS estimada es ${fmt(x.ucsEst,2)} MPa frente a una requerida de ${fmt(x.ucsReq,2)} MPa. El margen calculado es ${fmt(r.margenUCS,2)} MPa.`;
+  conclusionesInforme.innerHTML=`<li>El esponjamiento incrementa el volumen suelto y condiciona la limpieza.</li><li>El caudal efectivo es más representativo que el caudal nominal porque incorpora disponibilidad, eficiencia y reticulación.</li><li>El porcentaje de sólidos y cemento controla la resistencia y el costo.</li><li>El curado determina la liberación final del tajeo.</li><li>La matriz de criticidad ayuda a priorizar acciones operativas.</li>`;
+}
+function mkChart(id,type,labels,datasets,title,yLabel){
+  if(charts[id])charts[id].destroy();
+  charts[id]=new Chart(document.getElementById(id),{type,data:{labels,datasets},options:{responsive:true,plugins:{title:{display:true,text:title},legend:{display:true}},scales:{y:{title:{display:true,text:yLabel}}}}});
+}
+function cargarEscenario(t){let x={...base};if(t==="conservador")Object.assign(x,{caudal:95,dispBomba:84,efBombeo:78,dispPlanta:86,esponjamiento:65,efLimpieza:75,curado:4,dilucion:12,sobrellenado:8});if(t==="optimista")Object.assign(x,{caudal:145,dispBomba:94,efBombeo:90,dispPlanta:95,esponjamiento:45,efLimpieza:88,curado:2.5,dilucion:5,sobrellenado:3});ids.forEach(id=>setv(id,x[id]));calcularTodo();}
+function exportarCSV(){
+  if(!latest)calcularTodo();
+  const x=latest.x,r=latest.r;
+  let rows=[["Indicador","Valor","Unidad"],["Volumen geometrico",r.volGeo,"m3"],["Tonelaje",r.ton,"t"],["Volumen roto",r.volRoto,"m3 sueltos"],["Viajes LHD",r.viajes,"viajes"],["Cuchara efectiva",r.capCucharaReal,"m3/pase"],["Pases por dumper",r.pasesCuchara,"pases"],["Combustible LHD",r.combustible,"L"],["Tiempo limpieza",r.tLimpieza,"h"],["Volumen relleno",r.volRelleno,"m3"],["Cemento",r.cementoT,"t"],["Caudal efectivo",r.caudalEf,"m3/h"],["Tiempo bombeo",r.tBombeo,"h"],["Ciclo total",r.cicloDias,"dias"],["Costo total",r.costo,"US$"]];
+  let csv=rows.map(a=>a.join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download="resultados_sensibilidad_llenado.csv";a.click();URL.revokeObjectURL(url);
+}
+
+const PIT_BOUNDS = {"minX": 4618.77, "maxX": 5577.54, "minY": 10082.05, "maxY": 11111.21, "minZ": 2020.0, "maxZ": 2280.0};
+const PIT_POLYLINES = [{"layer":"PIT1_PHASE3_STR001","points":[[5319.1,10522.35,2060.0],[5317.17,10537.43,2060.0],[5314.46,10542.45,2060.0],[5310.66,10547.28,2060.0],[5321.48,10575.26,2060.0],[5295.51,10582.44,2060.0],[5263.66,10600.27,2060.0],[5248.14,10611.32,2060.0],[5245.05,10613.84,2060.0],[5242.22,10619.46,2060.0],[5231.86,10658.7,2060.0],[5218.53,10709.03,2060.0],[5197.07,10768.25,2060.0],[5185.22,10780.09,2060.0],[5168.2,10790.45,2060.0],[5154.14,10792.67,2060.0],[5139.33,10780.83,2060.0],[5126.01,10762.33,2060.0],[5091.22,10723.83,2060.0],[5057.91,10680.16,2060.0],[5024.6,10621.69,2060.0],[5001.65,10575.05,2060.0],[4988.17,10552.33,2060.0],[4994.1,10522.82,2060.0],[5029.78,10503.99,2060.0],[5052.47,10490.28,2060.0],[5071.64,10481.76,2060.0],[5113.73,10470.84,2060.0],[5154.07,10447.08,2060.0],[5195.5,10439.89,2060.0],[5229.21,10444.31,2060.0],[5261.81,10464.21,2060.0],[5293.85,10485.75,2060.0],[5311.53,10491.83,2060.0],[5319.1,10522.35,2060.0]]},{"layer":"PIT1_PHASE3_STR002","points":[[5321.48,10575.26,2060.0],[5295.03,10581.28,2057.83],[5262.07,10597.77,2054.88],[5245.81,10608.26,2053.33],[5241.8,10611.22,2052.93],[5238.05,10617.89,2052.32],[5229.35,10645.59,2050.0],[5200.73,10636.6,2050.0],[5210.37,10605.91,2052.32],[5218.8,10590.92,2052.93],[5228.74,10583.57,2053.33],[5247.19,10571.68,2054.88],[5284.84,10552.83,2057.83],[5310.66,10547.28,2060.0]]},{"layer":"PIT1_PHASE3_STR003","points":[[5313.24,10522.69,2050.0],[5311.58,10535.63,2050.0],[5309.61,10539.27,2050.0],[5307.41,10542.07,2050.0],[5283.33,10548.53,2050.0],[5245.79,10569.23,2050.0],[5227.65,10581.98,2050.0],[5217.5,10589.78,2050.0],[5209.13,10605.37,2050.0],[5200.73,10636.6,2050.0],[5229.35,10645.59,2050.0],[5226.28,10657.22,2050.0],[5213.02,10707.3,2050.0],[5197.49,10748.3,2050.0],[5192.71,10755.21,2050.0],[5183.15,10761.05,2050.0],[5169.34,10764.77,2050.0],[5155.0,10765.83,2050.0],[5142.26,10763.71,2050.0],[5130.51,10758.69,2050.0],[5095.66,10720.14,2050.0],[5062.73,10676.97,2050.0],[5029.7,10618.98,2050.0],[5006.73,10572.3,2050.0],[4994.27,10551.29,2050.0],[4999.22,10526.65,2050.0],[5032.62,10509.02,2050.0],[5055.15,10495.41,2050.0],[5073.55,10487.23,2050.0],[5115.96,10476.22,2050.0],[5156.09,10452.59,2050.0],[5195.62,10445.73,2050.0],[5227.24,10449.88,2050.0],[5258.69,10469.07,2050.0],[5291.26,10490.97,2050.0],[5306.69,10496.27,2050.0],[5313.24,10522.69,2050.0]]},{"layer":"PIT1_PHASE3_STR004","points":[[5229.35,10645.59,2050.0],[5225.91,10657.12,2049.35],[5211.12,10706.7,2046.56],[5194.51,10746.74,2044.22],[5190.21,10752.56,2043.83],[5181.61,10757.46,2043.29],[5168.62,10760.52,2042.57],[5155.22,10761.1,2041.85],[5143.69,10758.8,2041.22],[5133.72,10754.18,2040.62],[5122.97,10741.51,2040.0],[5145.84,10722.09,2040.0],[5152.33,10729.74,2040.62],[5153.06,10730.08,2041.22],[5157.54,10730.97,2041.85],[5164.5,10730.67,2042.57],[5169.16,10729.57,2043.75],[5182.82,10696.63,2046.56],[5197.16,10648.55,2049.35],[5200.73,10636.6,2050.0]]},{"layer":"PIT1_PHASE3_STR005","points":[[5307.37,10523.03,2040.0],[5305.99,10533.84,2040.0],[5304.77,10536.1,2040.0],[5304.06,10536.99,2040.0],[5281.16,10543.13,2040.0],[5242.73,10564.32,2040.0],[5224.23,10577.33,2040.0],[5213.0,10585.96,2040.0],[5203.73,10603.23,2040.0],[5195.17,10635.02,2040.0],[5191.99,10647.01,2040.0],[5179.25,10695.36,2040.0],[5167.58,10727.72,2040.0],[5164.29,10729.19,2040.0],[5157.62,10729.9,2040.0],[5153.28,10729.41,2040.0],[5152.55,10729.45,2040.0],[5145.84,10722.09,2040.0],[5122.85,10741.61,2040.0],[5100.11,10716.45,2040.0],[5067.56,10673.77,2040.0],[5034.8,10616.27,2040.0],[5011.81,10569.55,2040.0],[5000.37,10550.25,2040.0],[5004.34,10530.48,2040.0],[5035.47,10514.05,2040.0],[5057.82,10500.54,2040.0],[5075.46,10492.7,2040.0],[5118.2,10481.61,2040.0],[5158.11,10458.1,2040.0],[5195.75,10451.57,2040.0],[5225.28,10455.45,2040.0],[5255.57,10473.93,2040.0],[5288.67,10496.18,2040.0],[5301.84,10500.71,2040.0],[5307.37,10523.03,2040.0]]},{"layer":"PIT1_PHASE3_STR006","points":[[5297.21,10523.62,2040.0],[5296.57,10528.65,2040.0],[5277.4,10533.79,2040.0],[5237.42,10555.83,2040.0],[5218.3,10569.27,2040.0],[5205.2,10579.33,2040.0],[5194.37,10599.52,2040.0],[5186.5,10632.7,2040.0],[5183.94,10644.88,2040.0],[5173.76,10693.66,2040.0],[5164.23,10725.15,2040.0],[5157.63,10726.2,2040.0],[5145.84,10722.09,2040.0],[5122.85,10741.61,2040.0],[5101.48,10715.31,2040.0],[5071.37,10671.25,2040.0],[5041.85,10612.54,2040.0],[5020.61,10564.78,2040.0],[5010.93,10548.45,2040.0],[5013.21,10537.1,2040.0],[5040.39,10522.76,2040.0],[5062.46,10509.42,2040.0],[5078.77,10502.17,2040.0],[5122.07,10490.93,2040.0],[5161.62,10467.64,2040.0],[5195.95,10461.69,2040.0],[5221.88,10465.09,2040.0],[5250.18,10482.35,2040.0],[5284.18,10505.21,2040.0],[5293.44,10508.4,2040.0],[5297.21,10523.62,2040.0]]},{"layer":"PIT1_PHASE3_STR007","points":[[5122.85,10741.61,2040.0],[5102.67,10714.42,2037.41],[5074.68,10669.3,2033.36],[5056.44,10628.64,2030.0],[5083.82,10616.36,2030.0],[5101.23,10655.19,2033.36],[5127.51,10697.54,2037.41],[5145.84,10722.09,2040.0]]},{"layer":"PIT1_PHASE3_STR008","points":[[5291.35,10523.95,2030.0],[5291.33,10524.08,2030.0],[5275.22,10528.4,2030.0],[5234.36,10550.92,2030.0],[5214.88,10564.62,2030.0],[5200.7,10575.51,2030.0],[5188.93,10597.45,2030.0],[5180.87,10631.44,2030.0],[5178.29,10643.7,2030.0],[5168.16,10692.23,2030.0],[5159.75,10720.02,2030.0],[5158.16,10720.27,2030.0],[5149.41,10717.22,2030.0],[5131.05,10695.13,2030.0],[5102.94,10654.28,2030.0],[5083.82,10616.36,2030.0],[5056.42,10628.65,2030.0],[5047.07,10610.06,2030.0],[5025.75,10562.13,2030.0],[5017.03,10547.41,2030.0],[5018.33,10540.93,2030.0],[5043.23,10527.78,2030.0],[5065.13,10514.55,2030.0],[5080.68,10507.64,2030.0],[5124.3,10496.32,2030.0],[5163.64,10473.15,2030.0],[5196.07,10467.52,2030.0],[5219.92,10470.65,2030.0],[5247.06,10487.21,2030.0],[5281.58,10510.43,2030.0],[5288.59,10512.84,2030.0],[5291.35,10523.95,2030.0]]},{"layer":"PIT1_PHASE3_STR009","points":[[5056.42,10628.65,2030.0],[5047.65,10609.79,2028.9],[5027.75,10561.1,2026.11],[5019.92,10546.92,2025.25],[5020.87,10542.83,2025.03],[5045.05,10531.0,2023.61],[5067.2,10518.52,2022.26],[5082.33,10512.34,2021.4],[5109.03,10506.28,2020.0],[5115.67,10535.53,2020.0],[5091.38,10541.05,2021.4],[5080.29,10545.58,2022.26],[5059.02,10557.56,2023.61],[5058.76,10557.69,2025.14],[5075.15,10597.79,2028.9],[5083.82,10616.36,2030.0]]},{"layer":"PIT1_PHASE3_STR010","points":[[5284.41,10519.96,2020.0],[5273.05,10523.0,2020.0],[5231.29,10546.02,2020.0],[5211.46,10559.97,2020.0],[5196.2,10571.69,2020.0],[5183.49,10595.38,2020.0],[5175.23,10630.18,2020.0],[5172.64,10642.51,2020.0],[5162.57,10690.8,2020.0],[5155.75,10713.31,2020.0],[5152.82,10712.3,2020.0],[5135.66,10691.64,2020.0],[5107.92,10651.33,2020.0],[5089.01,10613.84,2020.0],[5079.86,10595.73,2020.0],[5062.56,10559.13,2020.0],[5080.86,10546.76,2020.0],[5091.62,10541.82,2020.0],[5115.67,10535.53,2020.0],[5109.02,10506.25,2020.0],[5126.53,10501.7,2020.0],[5165.66,10478.65,2020.0],[5196.19,10473.36,2020.0],[5217.95,10476.22,2020.0],[5243.95,10492.08,2020.0],[5278.99,10515.64,2020.0],[5283.75,10517.27,2020.0],[5284.41,10519.96,2020.0]]},{"layer":"PIT1_PHASE3_STR011","points":[[5240.05,10498.15,2020.0],[5265.42,10517.14,2020.0],[5225.99,10537.53,2020.0],[5205.54,10551.91,2020.0],[5188.4,10565.07,2020.0],[5174.06,10591.81,2020.0],[5165.47,10628.0,2020.0],[5162.85,10640.46,2020.0],[5152.87,10688.32,2020.0],[5151.01,10694.47,2020.0],[5143.64,10685.6,2020.0],[5116.54,10646.22,2020.0],[5096.22,10610.2,2020.0],[5085.8,10592.82,2020.0],[5067.56,10560.5,2020.0],[5082.13,10549.03,2020.0],[5092.22,10543.49,2020.0],[5115.36,10535.62,2020.0],[5115.67,10535.53,2020.0],[5109.02,10506.25,2020.0],[5126.9,10502.58,2020.0],[5166.79,10481.73,2020.0],[5196.29,10478.14,2020.0],[5216.0,10481.75,2020.0],[5240.05,10498.15,2020.0]]},{"layer":"PIT1_PHASE3_STR012","points":[[5317.94,10537.67,2060.0],[5314.51,10542.48,2060.0],[5314.18,10542.8,2060.0],[5310.66,10547.28,2060.0],[5321.48,10575.26,2060.0],[5296.25,10584.24,2060.0],[5265.67,10603.46,2060.0],[5251.0,10615.08,2060.0],[5248.93,10616.95,2060.0],[5247.02,10621.28,2060.0],[5238.77,10660.52,2060.0],[5227.92,10711.97,2060.0],[5205.71,10773.75,2060.0],[5191.45,10788.01,2060.0],[5171.71,10800.02,2060.0],[5151.34,10803.24,2060.0],[5132.02,10787.78,2060.0],[5118.22,10768.62,2060.0],[5083.52,10730.23,2060.0],[5049.55,10685.69,2060.0],[5015.76,10626.37,2060.0],[4992.85,10579.82,2060.0],[4977.61,10554.12,2060.0],[4985.23,10516.2,2060.0],[5024.86,10495.28,2060.0],[5047.84,10481.4,2060.0],[5068.33,10472.29,2060.0],[5109.86,10461.51,2060.0],[5150.56,10437.54,2060.0],[5195.3,10429.78,2060.0],[5232.61,10434.68,2060.0],[5272.02,10447.2,2060.0],[5298.46,10454.16,2060.0],[5313.77,10454.16,2060.0],[5318.33,10476.35,2060.0],[5319.87,10490.65,2060.0],[5319.34,10522.37,2060.0],[5317.94,10537.67,2060.0]]},{"layer":"PIT1_PHASE3_STR013","points":[[5356.21,10491.73,2070.0],[5355.51,10527.92,2070.0],[5350.64,10550.88,2070.0],[5341.86,10566.58,2070.0],[5322.12,10585.67,2070.0],[5288.02,10596.8,2070.0],[5269.01,10608.18,2070.0],[5254.73,10619.49,2070.0],[5253.71,10620.41,2070.0],[5252.54,10623.06,2070.0],[5244.42,10661.71,2070.0],[5233.49,10713.55,2070.0],[5210.71,10776.91,2070.0],[5195.04,10792.58,2070.0],[5173.74,10805.55,2070.0],[5149.72,10809.34,2070.0],[5127.79,10791.8,2070.0],[5113.72,10772.25,2070.0],[5079.07,10733.92,2070.0],[5044.73,10688.89,2070.0],[5010.66,10629.08,2070.0],[4987.77,10582.57,2070.0],[4971.52,10555.16,2070.0],[4980.11,10512.37,2070.0],[5022.01,10490.26,2070.0],[5045.16,10476.27,2070.0],[5066.42,10466.82,2070.0],[5107.63,10456.12,2070.0],[5148.54,10432.03,2070.0],[5195.18,10423.94,2070.0],[5233.87,10429.02,2070.0],[5273.63,10441.66,2070.0],[5299.2,10448.39,2070.0],[5318.47,10448.39,2070.0],[5333.94,10452.07,2070.0],[5347.16,10459.73,2070.0],[5355.51,10473.64,2070.0],[5356.21,10491.73,2070.0]]},{"layer":"PIT1_PHASE3_STR014","points":[[5361.99,10491.68,2080.0],[5361.28,10528.58,2080.0],[5356.11,10552.93,2080.0],[5346.48,10570.14,2080.0],[5325.17,10590.75,2080.0],[5290.43,10602.09,2080.0],[5272.3,10612.94,2080.0],[5258.49,10623.88,2080.0],[5258.07,10624.84,2080.0],[5250.06,10662.9,2080.0],[5239.05,10715.13,2080.0],[5215.7,10780.08,2080.0],[5198.63,10797.15,2080.0],[5175.77,10811.07,2080.0],[5148.1,10815.44,2080.0],[5123.57,10795.81,2080.0],[5109.22,10775.89,2080.0],[5074.63,10737.62,2080.0],[5039.9,10692.08,2080.0],[5005.55,10631.78,2080.0],[4982.69,10585.32,2080.0],[4965.42,10556.2,2080.0],[4974.99,10508.55,2080.0],[5019.17,10485.23,2080.0],[5042.48,10471.14,2080.0],[5064.51,10461.35,2080.0],[5105.4,10450.74,2080.0],[5146.51,10426.52,2080.0],[5195.06,10418.1,2080.0],[5235.13,10423.36,2080.0],[5275.24,10436.11,2080.0],[5299.95,10442.61,2080.0],[5319.15,10442.61,2080.0],[5336.1,10446.65,2080.0],[5351.35,10455.48,2080.0],[5361.23,10471.94,2080.0],[5361.99,10491.68,2080.0]]},{"layer":"PIT1_PHASE3_STR015","points":[[5371.99,10491.58,2080.0],[5371.26,10529.72,2080.0],[5365.58,10556.49,2080.0],[5354.49,10576.31,2080.0],[5330.47,10599.54,2080.0],[5294.6,10611.25,2080.0],[5278.0,10621.19,2080.0],[5267.27,10629.68,2080.0],[5259.85,10664.96,2080.0],[5248.7,10717.86,2080.0],[5224.36,10785.57,2080.0],[5204.86,10805.07,2080.0],[5179.28,10820.64,2080.0],[5145.3,10826.01,2080.0],[5116.25,10802.77,2080.0],[5101.43,10782.18,2080.0],[5066.93,10744.01,2080.0],[5031.54,10697.61,2080.0],[4996.71,10636.47,2080.0],[4973.89,10590.08,2080.0],[4954.86,10558.0,2080.0],[4966.12,10501.92,2080.0],[5014.25,10476.52,2080.0],[5037.85,10462.26,2080.0],[5061.2,10451.87,2080.0],[5101.53,10441.41,2080.0],[5143.01,10416.98,2080.0],[5194.85,10407.99,2080.0],[5237.31,10413.56,2080.0],[5278.03,10426.5,2080.0],[5301.24,10432.61,2080.0],[5320.33,10432.61,2080.0],[5339.85,10437.26,2080.0],[5358.59,10448.12,2080.0],[5371.12,10469.0,2080.0],[5371.99,10491.58,2080.0]]},{"layer":"PIT1_PHASE3_STR016","points":[[5377.77,10491.53,2090.0],[5377.02,10530.38,2090.0],[5371.04,10558.55,2090.0],[5359.11,10579.87,2090.0],[5333.52,10604.61,2090.0],[5305.53,10613.59,2090.0],[5282.99,10626.89,2090.0],[5274.78,10633.75,2090.0],[5272.22,10635.7,2090.0],[5265.5,10666.15,2090.0],[5254.26,10719.44,2090.0],[5229.35,10788.74,2090.0],[5208.45,10809.64,2090.0],[5181.3,10826.17,2090.0],[5143.68,10832.11,2090.0],[5112.03,10806.78,2090.0],[5096.93,10785.81,2090.0],[5062.49,10747.7,2090.0],[5026.72,10700.81,2090.0],[4991.61,10639.18,2090.0],[4968.81,10592.84,2090.0],[4948.76,10559.03,2090.0],[4951.7,10544.43,2090.0],[4959.03,10510.11,2090.0],[4962.03,10498.12,2090.0],[5011.4,10471.49,2090.0],[5035.17,10457.13,2090.0],[5059.29,10446.41,2090.0],[5099.3,10436.03,2090.0],[5140.99,10411.47,2090.0],[5194.73,10402.15,2090.0],[5238.57,10407.9,2090.0],[5279.64,10420.96,2090.0],[5301.99,10426.84,2090.0],[5321.0,10426.84,2090.0],[5342.01,10431.84,2090.0],[5362.78,10443.87,2090.0],[5376.83,10467.29,2090.0],[5377.77,10491.53,2090.0]]},{"layer":"PIT1_PHASE3_STR017","points":[[5383.54,10491.47,2100.0],[5382.78,10531.04,2100.0],[5376.51,10560.6,2100.0],[5363.74,10583.43,2100.0],[5336.57,10609.7,2100.0],[5307.91,10618.89,2100.0],[5286.33,10631.62,2100.0],[5278.38,10638.26,2100.0],[5277.41,10639.0,2100.0],[5271.14,10667.37,2100.0],[5259.83,10721.02,2100.0],[5234.35,10791.91,2100.0],[5212.04,10814.22,2100.0],[5183.33,10831.69,2100.0],[5142.07,10838.21,2100.0],[5107.8,10810.8,2100.0],[5092.43,10789.45,2100.0],[5058.04,10751.4,2100.0],[5021.89,10704.0,2100.0],[4986.51,10641.88,2100.0],[4963.73,10595.59,2100.0],[4942.66,10560.07,2100.0],[4946.05,10543.26,2100.0],[4953.41,10508.81,2100.0],[4957.05,10494.25,2100.0],[5008.54,10466.48,2100.0],[5032.5,10452.0,2100.0],[5057.38,10440.94,2100.0],[5097.06,10430.64,2100.0],[5138.96,10405.96,2100.0],[5194.61,10396.31,2100.0],[5239.83,10402.24,2100.0],[5281.25,10415.41,2100.0],[5302.74,10421.07,2100.0],[5321.68,10421.07,2100.0],[5344.17,10426.42,2100.0],[5366.96,10439.62,2100.0],[5382.55,10465.59,2100.0],[5383.54,10491.47,2100.0]]},{"layer":"PIT1_PHASE3_STR018","points":[[5393.54,10491.38,2100.0],[5392.76,10532.19,2100.0],[5385.98,10564.16,2100.0],[5371.74,10589.59,2100.0],[5341.84,10618.51,2100.0],[5312.03,10628.07,2100.0],[5292.12,10639.82,2100.0],[5280.92,10669.48,2100.0],[5269.47,10723.76,2100.0],[5243.0,10797.4,2100.0],[5218.27,10822.13,2100.0],[5186.84,10841.26,2100.0],[5139.27,10848.77,2100.0],[5100.49,10817.75,2100.0],[5084.64,10795.74,2100.0],[5050.34,10757.79,2100.0],[5013.53,10709.53,2100.0],[4977.67,10646.57,2100.0],[4954.93,10600.35,2100.0],[4932.1,10561.86,2100.0],[4936.26,10541.22,2100.0],[4943.66,10506.55,2100.0],[4948.42,10487.54,2100.0],[5003.58,10457.79,2100.0],[5027.86,10443.11,2100.0],[5054.07,10431.46,2100.0],[5093.19,10421.31,2100.0],[5135.46,10396.42,2100.0],[5194.4,10386.2,2100.0],[5242.01,10392.45,2100.0],[5284.03,10405.8,2100.0],[5304.03,10411.07,2100.0],[5322.86,10411.07,2100.0],[5347.91,10417.04,2100.0],[5374.21,10432.26,2100.0],[5392.44,10462.65,2100.0],[5393.54,10491.38,2100.0]]},{"layer":"PIT1_PHASE3_STR019","points":[[5399.32,10491.32,2110.0],[5398.52,10532.85,2110.0],[5391.44,10566.22,2110.0],[5376.37,10593.16,2110.0],[5344.89,10623.59,2110.0],[5314.41,10633.37,2110.0],[5296.8,10643.76,2110.0],[5286.48,10671.1,2110.0],[5275.04,10725.34,2110.0],[5248.0,10800.57,2110.0],[5221.86,10826.71,2110.0],[5188.87,10846.79,2110.0],[5137.65,10854.87,2110.0],[5096.27,10821.77,2110.0],[5080.14,10799.37,2110.0],[5045.9,10761.49,2110.0],[5008.71,10712.73,2110.0],[4972.57,10649.27,2110.0],[4949.85,10603.1,2110.0],[4926.0,10562.9,2110.0],[4930.6,10540.05,2110.0],[4938.04,10505.25,2110.0],[4943.43,10483.67,2110.0],[5000.71,10452.78,2110.0],[5025.18,10437.99,2110.0],[5052.16,10426.0,2110.0],[5090.96,10415.93,2110.0],[5133.44,10390.91,2110.0],[5194.28,10380.36,2110.0],[5243.27,10386.79,2110.0],[5285.64,10400.26,2110.0],[5304.78,10405.29,2110.0],[5323.54,10405.29,2110.0],[5350.07,10411.62,2110.0],[5378.39,10428.01,2110.0],[5398.15,10460.95,2110.0],[5399.32,10491.32,2110.0]]},{"layer":"PIT1_PHASE3_STR020","points":[[5405.1,10491.26,2120.0],[5404.28,10533.51,2120.0],[5396.91,10568.27,2120.0],[5380.99,10596.72,2120.0],[5347.94,10628.68,2120.0],[5316.79,10638.67,2120.0],[5301.48,10647.7,2120.0],[5292.03,10672.73,2120.0],[5280.61,10726.92,2120.0],[5252.99,10803.74,2120.0],[5225.45,10831.28,2120.0],[5190.9,10852.31,2120.0],[5136.03,10860.97,2120.0],[5092.04,10825.78,2120.0],[5075.65,10803.01,2120.0],[5041.45,10765.18,2120.0],[5003.88,10715.92,2120.0],[4967.46,10651.98,2120.0],[4944.77,10605.86,2120.0],[4919.91,10563.94,2120.0],[4924.95,10538.88,2120.0],[4932.41,10503.95,2120.0],[4938.45,10479.8,2120.0],[4997.84,10447.76,2120.0],[5022.51,10432.86,2120.0],[5050.25,10420.53,2120.0],[5088.73,10410.54,2120.0],[5131.41,10385.4,2120.0],[5194.16,10374.52,2120.0],[5244.53,10381.13,2120.0],[5287.26,10394.71,2120.0],[5305.53,10399.52,2120.0],[5324.21,10399.52,2120.0],[5352.23,10406.19,2120.0],[5382.57,10423.76,2120.0],[5403.86,10459.24,2120.0],[5405.1,10491.26,2120.0]]},{"layer":"PIT1_PHASE3_STR021","points":[[5415.1,10491.17,2120.0],[5414.26,10534.65,2120.0],[5406.38,10571.83,2120.0],[5389.0,10602.88,2120.0],[5353.21,10637.49,2120.0],[5320.91,10647.85,2120.0],[5309.59,10654.53,2120.0],[5301.66,10675.54,2120.0],[5290.25,10729.65,2120.0],[5261.65,10809.22,2120.0],[5231.68,10839.2,2120.0],[5194.41,10861.88,2120.0],[5133.23,10871.54,2120.0],[5084.73,10832.73,2120.0],[5067.85,10809.3,2120.0],[5033.76,10771.58,2120.0],[4995.53,10721.45,2120.0],[4958.62,10656.67,2120.0],[4935.97,10610.62,2120.0],[4909.34,10565.73,2120.0],[4880.43,10525.03,2120.0],[4856.55,10502.41,2120.0],[4828.9,10477.27,2120.0],[4797.48,10447.11,2120.0],[4781.14,10413.17,2120.0],[4781.14,10357.87,2120.0],[4794.97,10320.17,2120.0],[4816.33,10291.26,2120.0],[4845.24,10277.44,2120.0],[4886.72,10300.06,2120.0],[4919.39,10323.94,2120.0],[4947.04,10360.39,2120.0],[4979.72,10415.69,2120.0],[5007.32,10428.66,2120.0],[5017.87,10423.97,2120.0],[5046.95,10411.05,2120.0],[5084.86,10401.21,2120.0],[5127.91,10375.86,2120.0],[5193.95,10364.41,2120.0],[5246.71,10371.33,2120.0],[5290.04,10385.1,2120.0],[5306.82,10389.52,2120.0],[5325.39,10389.52,2120.0],[5355.98,10396.81,2120.0],[5389.82,10416.4,2120.0],[5413.76,10456.3,2120.0],[5415.1,10491.17,2120.0]]},{"layer":"PIT1_PHASE3_STR022","points":[[5420.88,10491.11,2130.0],[5420.03,10535.31,2130.0],[5411.84,10573.89,2130.0],[5393.62,10606.44,2130.0],[5356.26,10642.58,2130.0],[5323.28,10653.16,2130.0],[5314.28,10658.47,2130.0],[5307.22,10677.17,2130.0],[5295.82,10731.23,2130.0],[5266.64,10812.39,2130.0],[5235.27,10843.77,2130.0],[5196.44,10867.41,2130.0],[5131.62,10877.64,2130.0],[5080.5,10836.75,2130.0],[5063.36,10812.93,2130.0],[5029.31,10775.27,2130.0],[4990.7,10724.65,2130.0],[4953.52,10659.37,2130.0],[4930.88,10613.37,2130.0],[4904.5,10568.88,2130.0],[4876.05,10528.83,2130.0],[4852.62,10506.64,2130.0],[4824.96,10481.49,2130.0],[4792.73,10450.55,2130.0],[4775.37,10414.49,2130.0],[4775.37,10356.85,2130.0],[4789.83,10317.4,2130.0],[4812.55,10286.67,2130.0],[4845.41,10270.95,2130.0],[4889.82,10295.17,2130.0],[4923.48,10319.78,2130.0],[4951.85,10357.16,2130.0],[4983.79,10411.22,2130.0],[5007.39,10422.32,2130.0],[5015.53,10418.7,2130.0],[5045.03,10405.58,2130.0],[5082.63,10395.83,2130.0],[5125.89,10370.35,2130.0],[5193.83,10358.57,2130.0],[5247.97,10365.67,2130.0],[5291.65,10379.56,2130.0],[5307.57,10383.75,2130.0],[5326.07,10383.75,2130.0],[5358.14,10391.39,2130.0],[5394.0,10412.15,2130.0],[5419.47,10454.6,2130.0],[5420.88,10491.11,2130.0]]},{"layer":"PIT1_PHASE3_STR023","points":[[5426.65,10491.06,2140.0],[5425.79,10535.97,2140.0],[5417.31,10575.94,2140.0],[5398.25,10610.0,2140.0],[5359.3,10647.66,2140.0],[5325.66,10658.46,2140.0],[5318.96,10662.41,2140.0],[5312.78,10678.79,2140.0],[5301.39,10732.81,2140.0],[5271.64,10815.56,2140.0],[5238.86,10848.34,2140.0],[5198.46,10872.93,2140.0],[5130.0,10883.74,2140.0],[5076.28,10840.76,2140.0],[5058.86,10816.57,2140.0],[5024.87,10778.96,2140.0],[4985.88,10727.84,2140.0],[4948.42,10662.08,2140.0],[4925.8,10616.12,2140.0],[4899.65,10572.03,2140.0],[4871.67,10532.64,2140.0],[4848.7,10510.87,2140.0],[4821.02,10485.71,2140.0],[4787.98,10453.99,2140.0],[4769.6,10415.81,2140.0],[4769.6,10355.82,2140.0],[4784.7,10314.64,2140.0],[4808.76,10282.08,2140.0],[4845.59,10264.47,2140.0],[4892.91,10290.29,2140.0],[4927.57,10315.61,2140.0],[4956.65,10353.94,2140.0],[4987.85,10406.75,2140.0],[5007.46,10415.97,2140.0],[5013.18,10413.42,2140.0],[5043.12,10400.12,2140.0],[5080.39,10390.44,2140.0],[5123.86,10364.84,2140.0],[5193.71,10352.73,2140.0],[5249.23,10360.01,2140.0],[5293.26,10374.01,2140.0],[5308.31,10377.97,2140.0],[5326.74,10377.97,2140.0],[5360.3,10385.97,2140.0],[5398.19,10407.9,2140.0],[5425.18,10452.9,2140.0],[5426.65,10491.06,2140.0]]},{"layer":"PIT1_PHASE3_STR024","points":[[5436.65,10490.96,2140.0],[5435.77,10537.12,2140.0],[5426.78,10579.5,2140.0],[5406.26,10616.17,2140.0],[5364.58,10656.47,2140.0],[5329.78,10667.64,2140.0],[5327.07,10669.23,2140.0],[5322.4,10681.61,2140.0],[5311.03,10735.55,2140.0],[5280.29,10821.05,2140.0],[5245.09,10856.26,2140.0],[5201.98,10882.5,2140.0],[5127.2,10894.31,2140.0],[5068.96,10847.72,2140.0],[5051.07,10822.86,2140.0],[5017.17,10785.36,2140.0],[4977.52,10733.37,2140.0],[4939.58,10666.76,2140.0],[4917.0,10620.89,2140.0],[4891.26,10577.48,2140.0],[4864.09,10539.22,2140.0],[4841.89,10518.2,2140.0],[4814.19,10493.02,2140.0],[4779.75,10459.96,2140.0],[4759.6,10418.09,2140.0],[4759.6,10354.05,2140.0],[4775.8,10309.85,2140.0],[4802.2,10274.14,2140.0],[4845.88,10253.24,2140.0],[4869.12,10243.5,2140.0],[4899.28,10233.45,2140.0],[4926.82,10225.38,2140.0],[4950.08,10228.24,2140.0],[4975.63,10241.01,2140.0],[5014.06,10256.39,2140.0],[5046.87,10266.11,2140.0],[5066.22,10267.46,2140.0],[5076.35,10281.04,2140.0],[5081.69,10293.15,2140.0],[5090.0,10321.99,2140.0],[5103.65,10344.04,2140.0],[5120.36,10355.3,2140.0],[5193.5,10342.62,2140.0],[5251.41,10350.22,2140.0],[5296.05,10364.41,2140.0],[5309.61,10367.97,2140.0],[5327.92,10367.97,2140.0],[5364.04,10376.58,2140.0],[5405.43,10400.54,2140.0],[5435.08,10449.95,2140.0],[5436.65,10490.96,2140.0]]},{"layer":"PIT1_PHASE3_STR025","points":[[5442.43,10490.91,2150.0],[5441.53,10537.78,2150.0],[5432.24,10581.56,2150.0],[5410.88,10619.73,2150.0],[5367.62,10661.56,2150.0],[5332.16,10672.94,2150.0],[5331.76,10673.17,2150.0],[5327.96,10683.23,2150.0],[5316.6,10737.13,2150.0],[5285.29,10824.22,2150.0],[5248.68,10860.83,2150.0],[5204.0,10888.02,2150.0],[5125.58,10900.41,2150.0],[5064.74,10851.73,2150.0],[5046.57,10826.5,2150.0],[5012.72,10789.05,2150.0],[4972.69,10736.56,2150.0],[4934.47,10669.47,2150.0],[4911.92,10623.64,2150.0],[4886.42,10580.63,2150.0],[4859.7,10543.03,2150.0],[4837.97,10522.43,2150.0],[4810.25,10497.24,2150.0],[4775.0,10463.4,2150.0],[4753.82,10419.41,2150.0],[4753.82,10353.02,2150.0],[4770.67,10307.08,2150.0],[4798.41,10269.55,2150.0],[4843.52,10247.97,2150.0],[4867.09,10238.09,2150.0],[4897.56,10227.94,2150.0],[4926.34,10219.5,2150.0],[4951.77,10222.63,2150.0],[4977.99,10235.74,2150.0],[5015.96,10250.93,2150.0],[5047.9,10260.39,2150.0],[5069.26,10261.89,2150.0],[5081.37,10278.11,2150.0],[5087.13,10291.18,2150.0],[5095.33,10319.62,2150.0],[5107.91,10339.94,2150.0],[5121.66,10349.21,2150.0],[5193.38,10336.78,2150.0],[5252.67,10344.56,2150.0],[5297.66,10358.86,2150.0],[5310.35,10362.2,2150.0],[5328.6,10362.2,2150.0],[5366.2,10371.16,2150.0],[5409.62,10396.29,2150.0],[5440.79,10448.25,2150.0],[5442.43,10490.91,2150.0]]},{"layer":"PIT1_PHASE3_STR026","points":[[5448.21,10490.85,2160.0],[5447.29,10538.44,2160.0],[5437.71,10583.61,2160.0],[5415.5,10623.29,2160.0],[5370.67,10666.64,2160.0],[5336.22,10677.7,2160.0],[5333.52,10684.86,2160.0],[5322.16,10738.71,2160.0],[5290.29,10827.39,2160.0],[5252.27,10865.4,2160.0],[5206.03,10893.55,2160.0],[5123.97,10906.51,2160.0],[5060.52,10855.75,2160.0],[5042.07,10830.13,2160.0],[5008.28,10792.74,2160.0],[4967.87,10739.76,2160.0],[4929.37,10672.18,2160.0],[4906.84,10626.39,2160.0],[4881.57,10583.78,2160.0],[4855.32,10546.83,2160.0],[4834.04,10526.67,2160.0],[4806.31,10501.46,2160.0],[4770.25,10466.84,2160.0],[4748.05,10420.72,2160.0],[4748.05,10352.0,2160.0],[4765.53,10304.32,2160.0],[4794.62,10264.96,2160.0],[4841.16,10242.7,2160.0],[4865.06,10232.68,2160.0],[4895.83,10222.42,2160.0],[4925.86,10213.63,2160.0],[4953.46,10217.02,2160.0],[4980.36,10230.47,2160.0],[5017.86,10245.47,2160.0],[5048.94,10254.68,2160.0],[5072.3,10256.32,2160.0],[5086.39,10275.18,2160.0],[5092.57,10289.21,2160.0],[5100.66,10317.26,2160.0],[5112.16,10335.85,2160.0],[5122.96,10343.13,2160.0],[5193.26,10330.94,2160.0],[5253.93,10338.9,2160.0],[5299.27,10353.31,2160.0],[5311.1,10356.43,2160.0],[5329.28,10356.43,2160.0],[5368.36,10365.74,2160.0],[5413.8,10392.04,2160.0],[5446.5,10446.55,2160.0],[5448.21,10490.85,2160.0]]},{"layer":"PIT1_PHASE3_STR027","points":[[5458.21,10490.75,2160.0],[5457.27,10539.58,2160.0],[5447.18,10587.17,2160.0],[5423.51,10629.46,2160.0],[5375.94,10675.45,2160.0],[5343.87,10685.74,2160.0],[5343.15,10687.67,2160.0],[5331.81,10741.44,2160.0],[5315.3,10788.96,2160.0],[5298.94,10832.88,2160.0],[5258.5,10873.32,2160.0],[5209.54,10903.12,2160.0],[5170.76,10910.88,2160.0],[5121.17,10917.07,2160.0],[5085.3,10892.02,2160.0],[5053.2,10862.7,2160.0],[5034.28,10836.42,2160.0],[5000.58,10799.14,2160.0],[4959.51,10745.29,2160.0],[4920.53,10676.86,2160.0],[4898.04,10631.16,2160.0],[4873.18,10589.24,2160.0],[4847.74,10553.42,2160.0],[4827.24,10534.0,2160.0],[4799.48,10508.76,2160.0],[4762.03,10472.81,2160.0],[4738.05,10423.01,2160.0],[4738.05,10350.22,2160.0],[4756.64,10299.53,2160.0],[4788.06,10257.01,2160.0],[4837.07,10233.58,2160.0],[4861.54,10223.32,2160.0],[4892.85,10212.88,2160.0],[4925.04,10203.45,2160.0],[4956.39,10207.31,2160.0],[4984.46,10221.34,2160.0],[5021.14,10236.01,2160.0],[5050.73,10244.78,2160.0],[5077.57,10246.66,2160.0],[5095.08,10270.11,2160.0],[5101.99,10285.79,2160.0],[5109.88,10313.17,2160.0],[5119.53,10328.76,2160.0],[5125.22,10332.59,2160.0],[5193.05,10320.83,2160.0],[5256.12,10329.1,2160.0],[5302.06,10343.71,2160.0],[5312.4,10346.43,2160.0],[5330.45,10346.43,2160.0],[5372.1,10356.35,2160.0],[5421.04,10384.68,2160.0],[5456.4,10443.6,2160.0],[5458.21,10490.75,2160.0]]},{"layer":"PIT1_PHASE3_STR028","points":[[5463.99,10490.7,2170.0],[5463.03,10540.24,2170.0],[5452.64,10589.23,2170.0],[5428.14,10633.02,2170.0],[5378.99,10680.54,2170.0],[5348.49,10690.33,2170.0],[5337.38,10742.99,2170.0],[5320.73,10790.92,2170.0],[5303.91,10836.07,2170.0],[5262.09,10877.89,2170.0],[5211.67,10908.58,2170.0],[5171.69,10916.58,2170.0],[5119.68,10923.08,2170.0],[5081.68,10896.54,2170.0],[5048.86,10866.56,2170.0],[5029.78,10840.06,2170.0],[4996.14,10802.83,2170.0],[4954.68,10748.48,2170.0],[4915.43,10679.57,2170.0],[4892.96,10633.91,2170.0],[4868.34,10592.39,2170.0],[4843.36,10557.22,2170.0],[4823.31,10538.23,2170.0],[4795.54,10512.98,2170.0],[4757.28,10476.25,2170.0],[4732.27,10424.32,2170.0],[4732.27,10349.2,2170.0],[4751.5,10296.76,2170.0],[4784.27,10252.43,2170.0],[4834.7,10228.31,2170.0],[4859.51,10217.91,2170.0],[4891.12,10207.37,2170.0],[4924.56,10197.57,2170.0],[4958.09,10201.7,2170.0],[4986.83,10216.07,2170.0],[5023.04,10230.55,2170.0],[5051.76,10239.06,2170.0],[5080.62,10241.09,2170.0],[5100.1,10267.18,2170.0],[5107.43,10283.82,2170.0],[5115.21,10310.8,2170.0],[5123.79,10324.66,2170.0],[5126.52,10326.5,2170.0],[5192.93,10314.99,2170.0],[5257.38,10323.44,2170.0],[5303.67,10338.16,2170.0],[5313.14,10340.65,2170.0],[5331.13,10340.65,2170.0],[5374.27,10350.93,2170.0],[5425.23,10380.43,2170.0],[5462.11,10441.9,2170.0],[5463.99,10490.7,2170.0]]},{"layer":"PIT1_PHASE3_STR029","points":[[5469.76,10490.64,2180.0],[5468.79,10540.9,2180.0],[5458.11,10591.28,2180.0],[5432.76,10636.58,2180.0],[5382.04,10685.63,2180.0],[5353.44,10694.8,2180.0],[5342.96,10744.54,2180.0],[5326.16,10792.88,2180.0],[5308.88,10839.26,2180.0],[5265.68,10882.46,2180.0],[5213.81,10914.04,2180.0],[5172.61,10922.28,2180.0],[5118.19,10929.08,2180.0],[5078.06,10901.06,2180.0],[5044.53,10870.42,2180.0],[5025.28,10843.69,2180.0],[4991.69,10806.52,2180.0],[4949.86,10751.68,2180.0],[4910.33,10682.27,2180.0],[4887.88,10636.66,2180.0],[4863.49,10595.54,2180.0],[4838.98,10561.03,2180.0],[4819.38,10542.46,2180.0],[4791.6,10517.2,2180.0],[4752.53,10479.7,2180.0],[4726.5,10425.64,2180.0],[4726.5,10348.17,2180.0],[4746.37,10293.99,2180.0],[4780.48,10247.84,2180.0],[4832.34,10223.04,2180.0],[4857.47,10212.5,2180.0],[4889.4,10201.86,2180.0],[4924.08,10191.7,2180.0],[4959.78,10196.09,2180.0],[4989.19,10210.8,2180.0],[5024.93,10225.09,2180.0],[5052.8,10233.35,2180.0],[5083.66,10235.51,2180.0],[5105.12,10264.25,2180.0],[5112.87,10281.85,2180.0],[5120.54,10308.44,2180.0],[5127.94,10320.4,2180.0],[5192.81,10309.15,2180.0],[5258.64,10317.79,2180.0],[5305.28,10332.61,2180.0],[5313.89,10334.88,2180.0],[5331.81,10334.88,2180.0],[5376.43,10345.51,2180.0],[5429.41,10376.18,2180.0],[5467.82,10440.2,2180.0],[5469.76,10490.64,2180.0]]},{"layer":"PIT1_PHASE3_STR030","points":[[5479.76,10490.55,2180.0],[5478.77,10542.05,2180.0],[5467.58,10594.84,2180.0],[5440.77,10642.74,2180.0],[5387.31,10694.43,2180.0],[5362.03,10702.55,2180.0],[5352.61,10747.22,2180.0],[5335.57,10796.26,2180.0],[5317.49,10844.8,2180.0],[5271.91,10890.38,2180.0],[5217.5,10923.5,2180.0],[5174.21,10932.16,2180.0],[5115.62,10939.48,2180.0],[5071.8,10908.88,2180.0],[5037.02,10877.1,2180.0],[5017.49,10849.98,2180.0],[4983.99,10812.92,2180.0],[4941.5,10757.21,2180.0],[4901.49,10686.96,2180.0],[4879.08,10641.42,2180.0],[4855.1,10600.99,2180.0],[4831.39,10567.61,2180.0],[4812.58,10549.79,2180.0],[4784.77,10524.51,2180.0],[4744.3,10485.66,2180.0],[4716.5,10427.92,2180.0],[4716.5,10346.39,2180.0],[4737.47,10289.21,2180.0],[4773.92,10239.89,2180.0],[4828.25,10213.91,2180.0],[4853.95,10203.13,2180.0],[4886.41,10192.31,2180.0],[4923.25,10181.52,2180.0],[4962.71,10186.37,2180.0],[4993.29,10201.67,2180.0],[5028.22,10215.64,2180.0],[5054.59,10223.45,2180.0],[5088.93,10225.86,2180.0],[5113.81,10259.18,2180.0],[5122.29,10278.43,2180.0],[5129.76,10304.35,2180.0],[5132.89,10309.39,2180.0],[5192.6,10299.04,2180.0],[5260.82,10307.99,2180.0],[5308.07,10323.01,2180.0],[5315.18,10324.88,2180.0],[5332.98,10324.88,2180.0],[5380.17,10336.12,2180.0],[5436.66,10368.82,2180.0],[5477.71,10437.25,2180.0],[5479.76,10490.55,2180.0]]},{"layer":"PIT1_PHASE3_STR031","points":[[5485.54,10490.49,2190.0],[5484.54,10542.71,2190.0],[5473.04,10596.89,2190.0],[5445.39,10646.3,2190.0],[5390.36,10699.52,2190.0],[5366.99,10707.02,2190.0],[5358.18,10748.77,2190.0],[5341.0,10798.22,2190.0],[5322.46,10847.99,2190.0],[5275.5,10894.96,2190.0],[5219.63,10928.96,2190.0],[5175.14,10937.86,2190.0],[5114.13,10945.48,2190.0],[5068.19,10913.4,2190.0],[5032.68,10880.96,2190.0],[5012.99,10853.62,2190.0],[4979.55,10816.61,2190.0],[4936.68,10760.4,2190.0],[4896.38,10689.67,2190.0],[4874.0,10644.17,2190.0],[4850.26,10604.14,2190.0],[4827.01,10571.42,2190.0],[4808.65,10554.02,2190.0],[4780.83,10528.73,2190.0],[4739.55,10489.1,2190.0],[4710.73,10429.24,2190.0],[4710.73,10345.37,2190.0],[4732.34,10286.44,2190.0],[4770.13,10235.3,2190.0],[4825.88,10208.64,2190.0],[4851.92,10197.72,2190.0],[4884.68,10186.8,2190.0],[4922.77,10175.64,2190.0],[4964.4,10180.77,2190.0],[4995.66,10196.39,2190.0],[5030.11,10210.18,2190.0],[5055.62,10217.73,2190.0],[5091.97,10220.28,2190.0],[5118.83,10256.25,2190.0],[5127.73,10276.46,2190.0],[5135.09,10301.98,2190.0],[5135.74,10303.03,2190.0],[5192.48,10293.2,2190.0],[5262.08,10302.33,2190.0],[5309.68,10317.46,2190.0],[5315.93,10319.1,2190.0],[5333.66,10319.1,2190.0],[5382.33,10330.7,2190.0],[5440.84,10364.58,2190.0],[5483.43,10435.55,2190.0],[5485.54,10490.49,2190.0]]},{"layer":"PIT1_PHASE3_STR032","points":[[5491.32,10490.44,2200.0],[5490.3,10543.37,2200.0],[5478.51,10598.95,2200.0],[5450.01,10649.86,2200.0],[5393.4,10704.61,2200.0],[5371.94,10711.49,2200.0],[5363.76,10750.32,2200.0],[5346.44,10800.17,2200.0],[5327.44,10851.18,2200.0],[5279.09,10899.53,2200.0],[5221.76,10934.42,2200.0],[5176.06,10943.57,2200.0],[5112.65,10951.49,2200.0],[5064.57,10917.92,2200.0],[5028.35,10884.82,2200.0],[5008.5,10857.25,2200.0],[4975.1,10820.31,2200.0],[4931.85,10763.6,2200.0],[4891.28,10692.37,2200.0],[4868.92,10646.93,2200.0],[4845.41,10607.29,2200.0],[4822.63,10575.22,2200.0],[4804.72,10558.26,2200.0],[4776.89,10532.95,2200.0],[4734.8,10492.55,2200.0],[4704.95,10430.56,2200.0],[4704.95,10344.34,2200.0],[4727.2,10283.67,2200.0],[4766.34,10230.72,2200.0],[4823.52,10203.37,2200.0],[4849.89,10192.31,2200.0],[4882.96,10181.29,2200.0],[4922.29,10169.77,2200.0],[4966.09,10175.16,2200.0],[4998.03,10191.12,2200.0],[5032.01,10204.72,2200.0],[5056.66,10212.02,2200.0],[5095.02,10214.71,2200.0],[5123.85,10253.32,2200.0],[5133.17,10274.49,2200.0],[5139.53,10296.52,2200.0],[5192.36,10287.36,2200.0],[5263.34,10296.67,2200.0],[5311.29,10311.91,2200.0],[5316.68,10313.33,2200.0],[5334.34,10313.33,2200.0],[5384.49,10325.28,2200.0],[5445.02,10360.33,2200.0],[5489.14,10433.85,2200.0],[5491.32,10490.44,2200.0]]},{"layer":"PIT1_PHASE3_STR033","points":[[5501.32,10490.34,2200.0],[5500.28,10544.51,2200.0],[5487.97,10602.51,2200.0],[5458.02,10656.03,2200.0],[5398.68,10713.42,2200.0],[5380.53,10719.24,2200.0],[5373.41,10753.0,2200.0],[5355.85,10803.56,2200.0],[5336.05,10856.71,2200.0],[5285.31,10907.45,2200.0],[5225.45,10943.88,2200.0],[5177.67,10953.44,2200.0],[5110.07,10961.89,2200.0],[5058.31,10925.74,2200.0],[5020.84,10891.5,2200.0],[5000.71,10863.54,2200.0],[4967.41,10826.7,2200.0],[4923.49,10769.13,2200.0],[4882.44,10697.06,2200.0],[4860.12,10651.69,2200.0],[4837.02,10612.75,2200.0],[4815.04,10581.81,2200.0],[4797.92,10565.59,2200.0],[4770.06,10540.26,2200.0],[4726.57,10498.51,2200.0],[4694.95,10432.84,2200.0],[4694.95,10342.57,2200.0],[4718.31,10278.88,2200.0],[4759.78,10222.77,2200.0],[4819.43,10194.24,2200.0],[4846.37,10182.95,2200.0],[4879.97,10171.75,2200.0],[4921.46,10159.59,2200.0],[4969.03,10165.44,2200.0],[5002.13,10181.99,2200.0],[5035.29,10195.26,2200.0],[5058.45,10202.12,2200.0],[5100.29,10205.05,2200.0],[5132.54,10248.25,2200.0],[5142.6,10271.07,2200.0],[5146.65,10285.14,2200.0],[5192.15,10277.25,2200.0],[5265.52,10286.87,2200.0],[5314.08,10302.31,2200.0],[5317.97,10303.33,2200.0],[5335.51,10303.33,2200.0],[5388.23,10315.89,2200.0],[5452.27,10352.97,2200.0],[5499.03,10430.9,2200.0],[5501.32,10490.34,2200.0]]},{"layer":"PIT1_PHASE3_STR034","points":[[5507.1,10490.28,2210.0],[5506.04,10545.17,2210.0],[5493.44,10604.56,2210.0],[5462.65,10659.59,2210.0],[5401.72,10718.5,2210.0],[5385.49,10723.71,2210.0],[5378.98,10754.55,2210.0],[5361.28,10805.51,2210.0],[5341.02,10859.91,2210.0],[5288.91,10912.02,2210.0],[5227.58,10949.35,2210.0],[5178.59,10959.15,2210.0],[5108.59,10967.89,2210.0],[5054.69,10930.26,2210.0],[5016.5,10895.36,2210.0],[4996.21,10867.18,2210.0],[4962.96,10830.39,2210.0],[4918.67,10772.32,2210.0],[4877.34,10699.77,2210.0],[4855.04,10654.44,2210.0],[4832.18,10615.9,2210.0],[4810.66,10585.61,2210.0],[4793.99,10569.82,2210.0],[4766.12,10544.48,2210.0],[4721.82,10501.95,2210.0],[4689.18,10434.16,2210.0],[4689.18,10341.54,2210.0],[4713.17,10276.12,2210.0],[4755.99,10218.18,2210.0],[4817.06,10188.97,2210.0],[4844.34,10177.54,2210.0],[4878.24,10166.24,2210.0],[4920.98,10153.71,2210.0],[4970.72,10159.83,2210.0],[5004.5,10176.72,2210.0],[5037.19,10189.8,2210.0],[5059.48,10196.41,2210.0],[5103.33,10199.48,2210.0],[5137.56,10245.32,2210.0],[5148.04,10269.1,2210.0],[5150.76,10278.56,2210.0],[5192.03,10271.41,2210.0],[5266.78,10281.21,2210.0],[5315.69,10296.76,2210.0],[5318.72,10297.56,2210.0],[5336.19,10297.56,2210.0],[5390.39,10310.47,2210.0],[5456.45,10348.72,2210.0],[5504.75,10429.2,2210.0],[5507.1,10490.28,2210.0]]},{"layer":"PIT1_PHASE3_STR035","points":[[5512.87,10490.23,2220.0],[5511.8,10545.83,2220.0],[5498.91,10606.62,2220.0],[5467.27,10663.15,2220.0],[5404.77,10723.59,2220.0],[5390.45,10728.18,2220.0],[5384.56,10756.1,2220.0],[5366.71,10807.47,2220.0],[5345.99,10863.1,2220.0],[5292.5,10916.59,2220.0],[5229.72,10954.81,2220.0],[5179.52,10964.85,2220.0],[5107.1,10973.9,2220.0],[5051.08,10934.78,2220.0],[5012.16,10899.22,2220.0],[4991.71,10870.81,2220.0],[4958.52,10834.09,2220.0],[4913.84,10775.52,2220.0],[4872.24,10702.47,2220.0],[4849.96,10657.19,2220.0],[4827.33,10619.05,2220.0],[4806.28,10589.42,2220.0],[4790.06,10574.05,2220.0],[4762.18,10548.7,2220.0],[4717.07,10505.4,2220.0],[4683.41,10435.48,2220.0],[4683.41,10340.52,2220.0],[4708.03,10273.35,2220.0],[4752.21,10213.59,2220.0],[4814.7,10183.7,2220.0],[4842.31,10172.13,2220.0],[4876.52,10160.73,2220.0],[4920.5,10147.84,2220.0],[4972.41,10154.22,2220.0],[5006.86,10171.45,2220.0],[5039.09,10184.34,2220.0],[5060.52,10190.69,2220.0],[5106.37,10193.91,2220.0],[5142.58,10242.39,2220.0],[5153.48,10267.13,2220.0],[5154.88,10271.99,2220.0],[5191.91,10265.57,2220.0],[5268.04,10275.56,2220.0],[5317.3,10291.21,2220.0],[5319.46,10291.78,2220.0],[5336.87,10291.78,2220.0],[5392.55,10305.05,2220.0],[5460.64,10344.47,2220.0],[5510.46,10427.5,2220.0],[5512.87,10490.23,2220.0]]},{"layer":"PIT1_PHASE3_STR036","points":[[5522.87,10490.13,2220.0],[5521.78,10546.98,2220.0],[5508.37,10610.18,2220.0],[5475.28,10669.32,2220.0],[5410.04,10732.4,2220.0],[5399.03,10735.93,2220.0],[5394.21,10758.79,2220.0],[5376.12,10810.86,2220.0],[5354.6,10868.63,2220.0],[5298.72,10924.51,2220.0],[5233.41,10964.27,2220.0],[5181.12,10974.73,2220.0],[5104.53,10984.3,2220.0],[5044.82,10942.6,2220.0],[5004.65,10905.9,2220.0],[4983.92,10877.1,2220.0],[4950.82,10840.48,2220.0],[4905.49,10781.05,2220.0],[4863.4,10707.16,2220.0],[4841.16,10661.96,2220.0],[4818.94,10624.5,2220.0],[4798.7,10596.0,2220.0],[4783.26,10581.38,2220.0],[4755.35,10556.0,2220.0],[4708.85,10511.36,2220.0],[4673.41,10437.76,2220.0],[4673.41,10338.74,2220.0],[4699.14,10268.56,2220.0],[4745.64,10205.65,2220.0],[4810.61,10174.58,2220.0],[4838.79,10162.76,2220.0],[4873.53,10151.18,2220.0],[4919.67,10137.66,2220.0],[4975.34,10144.51,2220.0],[5010.96,10162.32,2220.0],[5042.37,10174.88,2220.0],[5062.31,10180.79,2220.0],[5111.64,10184.25,2220.0],[5151.28,10237.32,2220.0],[5162.0,10260.61,2220.0],[5191.7,10255.46,2220.0],[5270.22,10265.76,2220.0],[5320.09,10281.61,2220.0],[5320.76,10281.78,2220.0],[5338.05,10281.78,2220.0],[5396.3,10295.66,2220.0],[5467.88,10337.11,2220.0],[5494.12,10380.83,2220.0],[5520.35,10424.56,2220.0],[5522.87,10490.13,2220.0]]},{"layer":"PIT1_PHASE3_STR037","points":[[5528.65,10490.08,2230.0],[5527.54,10547.64,2230.0],[5513.84,10612.23,2230.0],[5479.9,10672.88,2230.0],[5413.09,10737.48,2230.0],[5403.99,10740.4,2230.0],[5399.79,10760.34,2230.0],[5381.55,10812.81,2230.0],[5359.57,10871.83,2230.0],[5302.32,10929.08,2230.0],[5235.54,10969.73,2230.0],[5182.05,10980.43,2230.0],[5103.04,10990.3,2230.0],[5041.2,10947.12,2230.0],[5000.32,10909.76,2230.0],[4979.42,10880.74,2230.0],[4946.37,10844.18,2230.0],[4900.66,10784.24,2230.0],[4858.29,10709.86,2230.0],[4836.08,10664.71,2230.0],[4814.1,10627.65,2230.0],[4794.32,10599.81,2230.0],[4779.33,10585.61,2230.0],[4751.41,10560.22,2230.0],[4704.1,10514.8,2230.0],[4667.63,10439.08,2230.0],[4667.63,10337.72,2230.0],[4694.0,10265.8,2230.0],[4741.86,10201.06,2230.0],[4808.24,10169.31,2230.0],[4836.76,10157.35,2230.0],[4871.81,10145.67,2230.0],[4919.2,10131.79,2230.0],[4977.03,10138.9,2230.0],[5013.33,10157.05,2230.0],[5044.27,10169.42,2230.0],[5063.34,10175.08,2230.0],[5114.69,10178.68,2230.0],[5156.26,10234.35,2230.0],[5165.39,10254.16,2230.0],[5191.58,10249.62,2230.0],[5271.48,10260.1,2230.0],[5321.54,10276.01,2230.0],[5338.72,10276.01,2230.0],[5398.46,10290.24,2230.0],[5472.07,10332.86,2230.0],[5499.07,10377.86,2230.0],[5526.06,10422.85,2230.0],[5528.65,10490.08,2230.0]]},{"layer":"PIT1_PHASE3_STR038","points":[[5534.43,10490.02,2240.0],[5533.31,10548.3,2240.0],[5519.31,10614.29,2240.0],[5484.53,10676.44,2240.0],[5416.13,10742.57,2240.0],[5408.95,10744.88,2240.0],[5405.36,10761.89,2240.0],[5386.99,10814.77,2240.0],[5364.54,10875.02,2240.0],[5305.91,10933.65,2240.0],[5237.67,10975.19,2240.0],[5182.97,10986.13,2240.0],[5101.56,10996.3,2240.0],[5037.59,10951.64,2240.0],[4995.98,10913.62,2240.0],[4974.92,10884.37,2240.0],[4941.93,10847.87,2240.0],[4895.84,10787.44,2240.0],[4853.19,10712.57,2240.0],[4830.99,10667.46,2240.0],[4809.25,10630.8,2240.0],[4789.94,10603.61,2240.0],[4775.41,10589.84,2240.0],[4747.46,10564.44,2240.0],[4699.35,10518.25,2240.0],[4661.86,10440.39,2240.0],[4661.86,10336.69,2240.0],[4688.87,10263.03,2240.0],[4738.07,10196.47,2240.0],[4805.88,10164.04,2240.0],[4834.72,10151.94,2240.0],[4870.08,10140.16,2240.0],[4918.72,10125.91,2240.0],[4978.73,10133.29,2240.0],[5015.7,10151.78,2240.0],[5046.16,10163.96,2240.0],[5064.38,10169.36,2240.0],[5117.73,10173.1,2240.0],[5161.25,10231.39,2240.0],[5168.78,10247.71,2240.0],[5191.46,10243.78,2240.0],[5272.74,10254.44,2240.0],[5322.43,10270.24,2240.0],[5339.4,10270.24,2240.0],[5400.62,10284.82,2240.0],[5476.25,10328.61,2240.0],[5504.02,10374.89,2240.0],[5531.78,10421.15,2240.0],[5534.43,10490.02,2240.0]]},{"layer":"PIT1_PHASE3_STR039","points":[[5544.43,10489.93,2240.0],[5543.28,10549.44,2240.0],[5528.77,10617.85,2240.0],[5492.53,10682.61,2240.0],[5421.41,10751.38,2240.0],[5417.53,10752.62,2240.0],[5415.01,10764.57,2240.0],[5396.4,10818.15,2240.0],[5373.16,10880.55,2240.0],[5312.13,10941.57,2240.0],[5241.36,10984.65,2240.0],[5184.57,10996.01,2240.0],[5098.98,11006.7,2240.0],[5031.32,10959.46,2240.0],[4988.47,10920.31,2240.0],[4967.13,10890.67,2240.0],[4934.23,10854.26,2240.0],[4887.48,10792.97,2240.0],[4844.35,10717.26,2240.0],[4822.19,10672.23,2240.0],[4800.86,10636.26,2240.0],[4782.35,10610.2,2240.0],[4768.6,10597.17,2240.0],[4740.64,10571.75,2240.0],[4691.12,10524.21,2240.0],[4651.86,10442.68,2240.0],[4651.86,10388.8,2240.0],[4651.86,10334.92,2240.0],[4679.97,10258.24,2240.0],[4731.51,10188.52,2240.0],[4801.79,10154.91,2240.0],[4831.2,10142.58,2240.0],[4867.09,10130.61,2240.0],[4917.89,10115.73,2240.0],[4981.66,10123.58,2240.0],[5019.8,10142.65,2240.0],[5049.45,10154.51,2240.0],[5066.17,10159.46,2240.0],[5123.0,10163.45,2240.0],[5169.9,10226.25,2240.0],[5174.64,10236.55,2240.0],[5191.25,10233.67,2240.0],[5274.92,10244.64,2240.0],[5323.99,10260.24,2240.0],[5340.58,10260.24,2240.0],[5404.36,10275.43,2240.0],[5483.5,10321.25,2240.0],[5512.59,10369.75,2240.0],[5541.67,10418.21,2240.0],[5544.43,10489.93,2240.0]]},{"layer":"PIT1_PHASE3_STR040","points":[[5550.21,10489.87,2250.0],[5549.05,10550.1,2250.0],[5534.24,10619.9,2250.0],[5497.16,10686.17,2250.0],[5424.46,10756.47,2250.0],[5422.49,10757.1,2250.0],[5420.59,10766.12,2250.0],[5401.83,10820.11,2250.0],[5378.13,10883.74,2250.0],[5315.73,10946.14,2250.0],[5243.49,10990.11,2250.0],[5185.5,11001.71,2250.0],[5097.5,11012.71,2250.0],[5027.71,10963.98,2250.0],[4984.14,10924.17,2250.0],[4962.63,10894.3,2250.0],[4929.79,10857.96,2250.0],[4882.65,10796.16,2250.0],[4839.25,10719.96,2250.0],[4817.11,10674.98,2250.0],[4796.02,10639.41,2250.0],[4777.97,10614.0,2250.0],[4764.68,10601.41,2250.0],[4736.7,10575.97,2250.0],[4686.37,10527.66,2250.0],[4646.09,10443.99,2250.0],[4646.09,10388.8,2250.0],[4646.09,10333.89,2250.0],[4674.84,10255.48,2250.0],[4727.72,10183.93,2250.0],[4799.43,10149.64,2250.0],[4829.17,10137.17,2250.0],[4865.37,10125.1,2250.0],[4917.41,10109.86,2250.0],[4983.35,10117.97,2250.0],[5022.17,10137.38,2250.0],[5051.34,10149.05,2250.0],[5067.2,10153.75,2250.0],[5126.04,10157.87,2250.0],[5174.89,10223.28,2250.0],[5178.03,10230.1,2250.0],[5191.13,10227.83,2250.0],[5276.18,10238.98,2250.0],[5324.88,10254.46,2250.0],[5341.25,10254.46,2250.0],[5406.52,10270.01,2250.0],[5487.68,10317.0,2250.0],[5517.54,10366.77,2250.0],[5547.38,10416.51,2250.0],[5550.21,10489.87,2250.0]]},{"layer":"PIT1_PHASE3_STR041","points":[[5555.98,10489.82,2260.0],[5554.81,10550.76,2260.0],[5539.71,10621.96,2260.0],[5501.78,10689.73,2260.0],[5427.5,10761.55,2260.0],[5427.45,10761.57,2260.0],[5426.16,10767.67,2260.0],[5407.26,10822.06,2260.0],[5383.1,10886.94,2260.0],[5319.32,10950.71,2260.0],[5245.63,10995.57,2260.0],[5186.42,11007.42,2260.0],[5096.01,11018.71,2260.0],[5024.09,10968.49,2260.0],[4979.8,10928.02,2260.0],[4958.13,10897.93,2260.0],[4925.34,10861.65,2260.0],[4877.83,10799.35,2260.0],[4834.15,10722.67,2260.0],[4812.03,10677.73,2260.0],[4791.17,10642.56,2260.0],[4773.59,10617.8,2260.0],[4760.75,10605.64,2260.0],[4732.75,10580.19,2260.0],[4681.62,10531.1,2260.0],[4640.31,10445.31,2260.0],[4640.31,10388.8,2260.0],[4640.31,10332.87,2260.0],[4669.7,10252.71,2260.0],[4723.93,10179.35,2260.0],[4797.06,10144.37,2260.0],[4827.14,10131.76,2260.0],[4863.64,10119.59,2260.0],[4916.93,10103.98,2260.0],[4985.04,10112.36,2260.0],[5024.53,10132.1,2260.0],[5053.24,10143.59,2260.0],[5068.24,10148.03,2260.0],[5129.09,10152.3,2260.0],[5179.88,10220.31,2260.0],[5181.42,10223.65,2260.0],[5191.01,10221.99,2260.0],[5277.44,10233.33,2260.0],[5325.78,10248.69,2260.0],[5341.93,10248.69,2260.0],[5408.68,10264.59,2260.0],[5491.86,10312.75,2260.0],[5522.5,10363.8,2260.0],[5553.1,10414.8,2260.0],[5555.98,10489.82,2260.0]]},{"layer":"PIT1_PHASE3_STR042","points":[[5565.98,10489.72,2260.0],[5564.79,10551.9,2260.0],[5549.17,10625.52,2260.0],[5509.79,10695.89,2260.0],[5472.91,10732.61,2260.0],[5436.03,10769.32,2260.0],[5435.82,10770.35,2260.0],[5416.67,10825.45,2260.0],[5391.71,10892.47,2260.0],[5325.54,10958.63,2260.0],[5306.5,11029.86,2260.0],[5283.87,11056.25,2260.0],[5264.52,11065.4,2260.0],[5187.94,11095.71,2260.0],[5170.76,11098.98,2260.0],[5133.05,11073.85,2260.0],[5087.81,11042.43,2260.0],[5017.83,10976.32,2260.0],[4972.29,10934.71,2260.0],[4950.34,10904.23,2260.0],[4917.64,10868.05,2260.0],[4869.47,10804.89,2260.0],[4825.31,10727.35,2260.0],[4803.23,10682.49,2260.0],[4782.78,10648.01,2260.0],[4766.0,10624.39,2260.0],[4753.95,10612.97,2260.0],[4725.93,10587.5,2260.0],[4673.39,10537.06,2260.0],[4630.31,10447.59,2260.0],[4630.31,10388.8,2260.0],[4630.31,10331.09,2260.0],[4660.81,10247.92,2260.0],[4717.37,10171.4,2260.0],[4792.97,10135.24,2260.0],[4823.62,10122.39,2260.0],[4860.66,10110.05,2260.0],[4916.1,10093.8,2260.0],[4987.97,10102.64,2260.0],[5028.63,10122.97,2260.0],[5056.52,10134.13,2260.0],[5070.03,10138.13,2260.0],[5134.36,10142.65,2260.0],[5187.28,10212.49,2260.0],[5190.8,10211.88,2260.0],[5279.62,10223.53,2260.0],[5327.33,10238.69,2260.0],[5343.11,10238.69,2260.0],[5412.43,10255.2,2260.0],[5455.77,10280.3,2260.0],[5499.11,10305.39,2260.0],[5531.07,10358.66,2260.0],[5562.99,10411.86,2260.0],[5565.98,10489.72,2260.0]]},{"layer":"PIT1_PHASE3_STR043","points":[[5571.76,10489.66,2270.0],[5570.55,10552.57,2270.0],[5554.64,10627.57,2270.0],[5514.43,10699.42,2270.0],[5476.99,10736.7,2270.0],[5443.33,10772.64,2270.0],[5422.1,10827.41,2270.0],[5396.68,10895.66,2270.0],[5330.72,10961.62,2270.0],[5311.74,11032.62,2270.0],[5287.46,11060.94,2270.0],[5266.82,11070.7,2270.0],[5189.56,11101.28,2270.0],[5169.52,11105.1,2270.0],[5129.81,11078.62,2270.0],[5084.16,11046.92,2270.0],[5013.9,10980.55,2270.0],[4967.95,10938.57,2270.0],[4945.85,10907.86,2270.0],[4913.2,10871.74,2270.0],[4864.64,10808.08,2270.0],[4820.2,10730.06,2270.0],[4798.15,10685.25,2270.0],[4777.94,10651.16,2270.0],[4761.62,10628.19,2270.0],[4750.02,10617.2,2270.0],[4721.98,10591.72,2270.0],[4668.64,10540.51,2270.0],[4624.54,10448.91,2270.0],[4624.54,10388.8,2270.0],[4624.54,10330.07,2270.0],[4655.67,10245.16,2270.0],[4713.58,10166.81,2270.0],[4790.61,10129.97,2270.0],[4821.59,10116.98,2270.0],[4858.93,10104.54,2270.0],[4915.62,10087.93,2270.0],[4989.66,10097.04,2270.0],[5031.0,10117.7,2270.0],[5058.42,10128.67,2270.0],[5071.06,10132.42,2270.0],[5137.38,10137.07,2270.0],[5189.76,10206.2,2270.0],[5190.68,10206.04,2270.0],[5280.88,10217.87,2270.0],[5328.22,10232.92,2270.0],[5343.79,10232.92,2270.0],[5414.59,10249.78,2270.0],[5458.66,10275.3,2270.0],[5503.29,10301.14,2270.0],[5536.02,10355.69,2270.0],[5568.7,10410.16,2270.0],[5571.76,10489.66,2270.0]]},{"layer":"PIT1_PHASE3_STR044","points":[[5319.1,10522.35,2060.0],[5317.17,10537.43,2060.0],[5314.46,10542.45,2060.0],[5310.66,10547.28,2060.0],[5321.48,10575.26,2060.0],[5295.51,10582.44,2060.0],[5263.66,10600.27,2060.0],[5248.14,10611.32,2060.0],[5245.05,10613.84,2060.0],[5242.22,10619.46,2060.0],[5231.86,10658.7,2060.0],[5218.53,10709.03,2060.0],[5197.07,10768.25,2060.0],[5185.22,10780.09,2060.0],[5168.2,10790.45,2060.0],[5154.14,10792.67,2060.0],[5139.33,10780.83,2060.0],[5126.01,10762.33,2060.0],[5091.22,10723.83,2060.0],[5057.91,10680.16,2060.0],[5024.6,10621.69,2060.0],[5001.65,10575.05,2060.0],[4988.17,10552.33,2060.0],[4994.1,10522.82,2060.0],[5029.78,10503.99,2060.0],[5052.47,10490.28,2060.0],[5071.64,10481.76,2060.0],[5113.73,10470.84,2060.0],[5154.07,10447.08,2060.0],[5195.5,10439.89,2060.0],[5229.21,10444.31,2060.0],[5261.81,10464.21,2060.0],[5293.85,10485.75,2060.0],[5311.53,10491.83,2060.0],[5319.1,10522.35,2060.0]]},{"layer":"PIT1_PHASE3_STR045","points":[[5310.66,10547.28,2060.0],[5314.7,10542.61,2060.49],[5317.7,10537.6,2060.96],[5320.36,10522.45,2062.19],[5322.62,10490.54,2064.75],[5321.71,10475.82,2065.93],[5351.57,10472.55,2065.93],[5352.68,10490.67,2064.75],[5350.18,10526.11,2062.19],[5346.29,10548.26,2060.96],[5339.09,10560.27,2060.49],[5333.35,10566.91,2060.0]]},{"layer":"PIT1_PHASE3_STR046","points":[[5310.66,10547.28,2060.0],[5321.48,10575.26,2060.0],[5333.35,10566.91,2060.0],[5310.66,10547.28,2060.0]]},{"layer":"PIT1_PHASE3_STR047","points":[[5577.54,10489.61,2280.0],[5576.31,10553.23,2280.0],[5560.11,10629.63,2280.0],[5519.08,10702.94,2280.0],[5481.13,10740.72,2280.0],[5448.31,10775.77,2280.0],[5427.5,10829.46,2280.0],[5401.65,10898.85,2280.0],[5335.9,10964.61,2280.0],[5316.97,11035.38,2280.0],[5291.04,11065.64,2280.0],[5269.12,11076.0,2280.0],[5191.18,11106.85,2280.0],[5168.28,11111.21,2280.0],[5126.56,11083.39,2280.0],[5080.51,11051.41,2280.0],[5009.97,10984.78,2280.0],[4963.62,10942.43,2280.0],[4941.35,10911.49,2280.0],[4908.75,10875.43,2280.0],[4859.82,10811.27,2280.0],[4815.1,10732.77,2280.0],[4793.07,10688.0,2280.0],[4773.09,10654.31,2280.0],[4757.24,10632.0,2280.0],[4746.09,10621.43,2280.0],[4718.04,10595.94,2280.0],[4663.89,10543.95,2280.0],[4618.77,10450.23,2280.0],[4618.77,10388.8,2280.0],[4618.77,10329.04,2280.0],[4650.54,10242.39,2280.0],[4709.79,10162.22,2280.0],[4788.24,10124.7,2280.0],[4819.56,10111.57,2280.0],[4857.21,10099.03,2280.0],[4915.14,10082.05,2280.0],[4991.36,10091.43,2280.0],[5033.37,10112.43,2280.0],[5060.32,10123.21,2280.0],[5072.1,10126.7,2280.0],[5140.4,10131.49,2280.0],[5192.24,10199.91,2280.0],[5190.56,10200.2,2280.0],[5282.14,10212.21,2280.0],[5329.12,10227.14,2280.0],[5344.46,10227.14,2280.0],[5416.75,10244.36,2280.0],[5461.55,10270.3,2280.0],[5507.48,10296.89,2280.0],[5540.97,10352.72,2280.0],[5574.41,10408.46,2280.0],[5577.54,10489.61,2280.0]]}];
+
+function pitToScenePoint(p,cx,cy,minZ,scale,zExag){
+  return new THREE.Vector3((p[0]-cx)*scale,(p[2]-minZ)*scale*zExag,-(p[1]-cy)*scale);
+}
+function samplePolylineScene(poly,n,cx,cy,minZ,scale,zExag){
+  const pts = poly.points.map(p=>pitToScenePoint(p,cx,cy,minZ,scale,zExag));
+  if(pts.length < 2) return [];
+  const out = [];
+  for(let i=0;i<n;i++){
+    const f = i / (n-1) * (pts.length-1);
+    const a = Math.floor(f);
+    const b = Math.min(a+1, pts.length-1);
+    out.push(pts[a].clone().lerp(pts[b], f-a));
+  }
+  return out;
+}
+function addPitBankSurfaces(group,cx,cy,minZ,scale,zExag){
+  const surfaceMat = new THREE.MeshStandardMaterial({
+    color:0x13304a, roughness:.92, metalness:.02,
+    transparent:true, opacity:.22, side:THREE.DoubleSide,
+    polygonOffset:true, polygonOffsetFactor:1, polygonOffsetUnits:1
+  });
+  const accentMat = new THREE.LineBasicMaterial({color:0x1c6c6f, transparent:true, opacity:.28});
+  const selected = PIT_POLYLINES
+    .filter((p,i)=>i>8 && i<43 && p.points.length>24)
+    .filter((p,i)=>i%2===0);
+  for(let k=0;k<selected.length-1;k++){
+    const a = samplePolylineScene(selected[k], 72, cx, cy, minZ, scale, zExag);
+    const b = samplePolylineScene(selected[k+1], 72, cx, cy, minZ, scale, zExag);
+    if(a.length !== b.length || a.length < 3) continue;
+    const verts = [];
+    const idx = [];
+    for(let i=0;i<a.length;i++){
+      verts.push(a[i].x,a[i].y,a[i].z,b[i].x,b[i].y,b[i].z);
+      if(i<a.length-1){
+        const j=i*2;
+        idx.push(j,j+1,j+2,j+1,j+3,j+2);
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(verts,3));
+    geo.setIndex(idx);
+    geo.computeVertexNormals();
+    const mesh = new THREE.Mesh(geo, surfaceMat);
+    mesh.name = "superficie_talud_datamine";
+    mesh.renderOrder = -2;
+    group.add(mesh);
+    if(k%3===0){
+      const edgeGeo = new THREE.BufferGeometry().setFromPoints(a.filter((_,i)=>i%3===0));
+      group.add(new THREE.Line(edgeGeo, accentMat));
+    }
+  }
+}
+
+/* 3D */
+function init3D(){
+  const c=document.getElementById("viewer3d");
+  scene=new THREE.Scene();scene.background=new THREE.Color(0x010409);scene.fog=new THREE.FogExp2(0x010409,.012);
+  camera=new THREE.PerspectiveCamera(45,c.clientWidth/c.clientHeight,.1,1000);camera.position.set(44,34,48);
+  renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(c.clientWidth,c.clientHeight);renderer.setPixelRatio(window.devicePixelRatio);c.appendChild(renderer.domElement);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  if(THREE.ACESFilmicToneMapping) renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.08;
+  if (THREE.OrbitControls) {
+  controls=new THREE.OrbitControls(camera,renderer.domElement);
+  controls.enableDamping=true;
+  controls.target.set(0,9,0);
+} else {
+  controls={update:function(){}, target:{set:function(){}}};
+}
+  scene.add(new THREE.HemisphereLight(0xbfd9ff,0x081018,.62));
+  scene.add(new THREE.AmbientLight(0xffffff,.22));
+  const d=new THREE.DirectionalLight(0xffffff,1.35);d.position.set(35,55,25);d.castShadow=true;d.shadow.mapSize.set(1024,1024);scene.add(d);
+  const fill=new THREE.DirectionalLight(0x75d7ff,.35);fill.position.set(-35,22,-20);scene.add(fill);
+  scene.add(new THREE.GridHelper(76,22,0x375a7a,0x20344a));
+  animate();window.addEventListener("resize",resize3D);
+}
+function construir3D(x,r){
+  [fillMesh,stopeWire,pipeMesh,barricadeMesh,rockGroup,pitGroup].forEach(o=>{if(o)scene.remove(o)});
+  pitGroup = new THREE.Group();
+
+  const cx=(PIT_BOUNDS.minX+PIT_BOUNDS.maxX)/2;
+  const cy=(PIT_BOUNDS.minY+PIT_BOUNDS.maxY)/2;
+  const minZ=PIT_BOUNDS.minZ;
+  const rangeXY=Math.max(PIT_BOUNDS.maxX-PIT_BOUNDS.minX, PIT_BOUNDS.maxY-PIT_BOUNDS.minY);
+  const scale=60/rangeXY;
+  const zExag=1.55;
+
+  addPitBankSurfaces(pitGroup,cx,cy,minZ,scale,zExag);
+
+  // Curvas de nivel / strings importados desde Datamine DXF
+  PIT_POLYLINES.forEach((poly,idx)=>{
+    const pts=[];
+    poly.points.forEach(p=>{
+      pts.push(new THREE.Vector3(
+        (p[0]-cx)*scale,
+        (p[2]-minZ)*scale*zExag,
+        -(p[1]-cy)*scale
+      ));
+    });
+    if(pts.length>1){
+      const geo=new THREE.BufferGeometry().setFromPoints(pts);
+      const elev=poly.points[0][2];
+      const t=(elev-PIT_BOUNDS.minZ)/(PIT_BOUNDS.maxZ-PIT_BOUNDS.minZ || 1);
+      const col=new THREE.Color().setHSL(0.52 - 0.16*t, 1.0, 0.50);
+      const line=new THREE.Line(geo,new THREE.LineBasicMaterial({color:col}));
+      pitGroup.add(line);
+    }
+  });
+
+  // Superficie base semitransparente para dar contexto al pit
+  const baseGeo=new THREE.PlaneGeometry(68,68,1,1);
+  const baseMat=new THREE.MeshStandardMaterial({color:0x0b2233,transparent:true,opacity:.30,side:THREE.DoubleSide});
+  const baseMesh=new THREE.Mesh(baseGeo,baseMat);
+  baseMesh.rotation.x=-Math.PI/2;
+  baseMesh.position.y=-0.05;
+  pitGroup.add(baseMesh);
+
+  scene.add(pitGroup);
+
+  // Tajeo / bloque de llenado académico ubicado dentro del pit
+  const sx=Math.max(x.largo/3.2,5);
+  const sy=Math.max(x.altura/2.8,4);
+  const sz=Math.max(x.ancho/1.2,4);
+  const stopeX=6, stopeY=6, stopeZ=-4;
+
+  const box=new THREE.BoxGeometry(sx,sy,sz);
+  stopeWire=new THREE.LineSegments(new THREE.EdgesGeometry(box),new THREE.LineBasicMaterial({color:0xffffff}));
+  stopeWire.position.set(stopeX,stopeY+sy/2,stopeZ);
+  scene.add(stopeWire);
+
+  fillMesh=new THREE.Mesh(
+    new THREE.BoxGeometry(sx*.96,sy*.65,sz*.96),
+    new THREE.MeshStandardMaterial({color:0xf5c542,transparent:true,opacity:.82,roughness:.55})
+  );
+  fillMesh.position.set(stopeX,stopeY+(sy*.65)/2,stopeZ);
+  scene.add(fillMesh);
+
+  barricadeMesh=new THREE.Mesh(
+    new THREE.BoxGeometry(.55,sy,sz*1.06),
+    new THREE.MeshStandardMaterial({color:0xff5e5e,transparent:true,opacity:.78})
+  );
+  barricadeMesh.position.set(stopeX-sx/2-.40,stopeY+sy/2,stopeZ);
+  scene.add(barricadeMesh);
+
+  pipeMesh=new THREE.Mesh(
+    new THREE.CylinderGeometry(.16,.16,sx*1.35,24),
+    new THREE.MeshStandardMaterial({color:0xff5e5e})
+  );
+  pipeMesh.rotation.z=Math.PI/2;
+  pipeMesh.position.set(stopeX,stopeY+sy+1.7,stopeZ-sz*.62);
+  scene.add(pipeMesh);
+
+  // Mineral roto decorativo dentro del tajeo
+  rockGroup=new THREE.Group();
+  const mat=new THREE.MeshStandardMaterial({color:0x858d98,roughness:.9});
+  for(let i=0;i<45;i++){
+    const m=new THREE.Mesh(new THREE.DodecahedronGeometry(Math.random()*.28+.14,0),mat);
+    m.position.set(
+      stopeX+(Math.random()-.5)*sx*.82,
+      stopeY+Math.random()*1.15+.08,
+      stopeZ+(Math.random()-.5)*sz*.82
+    );
+    m.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);
+    rockGroup.add(m);
+  }
+  scene.add(rockGroup);
+
+  // Ajuste de cámara para ver el pit completo
+  camera.position.set(52,38,58);
+  if(controls && controls.target && controls.target.set) controls.target.set(0,8,0);
+  if(controls && controls.update) controls.update();
+}
+
+function actualizarFill3D(p){
+  p=+p;fillBadge.innerText=p+"%";fillLabel3d.innerText="Avance: "+p+"%";k3dAvance.innerText=p+"%";progressFill.style.width=p+"%";progressFill.innerText=p+"%";
+  if(latest){k3dColocado.innerText=fmt0(latest.r.volRelleno*p/100);k3dPendiente.innerText=fmt0(latest.r.volRelleno*(1-p/100));k3dTiempo.innerText=fmt(latest.r.tBombeo*p/100,1)}
+  if(fillMesh){
+    const x=getX();
+    const sx=Math.max(x.largo/3.2,5);
+    const sy=Math.max(x.altura/2.8,4);
+    const sz=Math.max(x.ancho/1.2,4);
+    const stopeX=6, stopeY=6, stopeZ=-4;
+    const h=Math.max(sy*p/100,.001);
+    fillMesh.geometry.dispose();
+    fillMesh.geometry=new THREE.BoxGeometry(sx*.96,h,sz*.96);
+    fillMesh.position.set(stopeX,stopeY+h/2,stopeZ);
+  }
+}
+
+function animarAvance(){let p=0;clearInterval(animTimer);animTimer=setInterval(()=>{p+=2;if(p>=100){p=100;clearInterval(animTimer)}fillRange.value=p;actualizarFill3D(p)},50)}
+function resetCamara(){
+  camera.position.set(44,34,48);
+  if (controls && controls.target && controls.target.set) controls.target.set(0,9,0);
+  if (controls && controls.update) controls.update();
+}
+function animate(){requestAnimationFrame(animate);if(controls)controls.update();renderer.render(scene,camera)}
+function resize3D(){const c=document.getElementById("viewer3d");camera.aspect=c.clientWidth/c.clientHeight;camera.updateProjectionMatrix();renderer.setSize(c.clientWidth,c.clientHeight)}
+window.addEventListener("load",()=>{init3D();calcularTodo()});
+</script>
+
+
+<script>
+/* ==========================================================
+   Visualización 3D de ciclo operativo.
+   - Ruta calculada sobre curvas Datamine.
+   - Dumper y pala creados con geometría procedural Three.js.
+   - La pala es visual: no agrega KPIs ni modifica el modelo técnico.
+   ========================================================== */
+
+let MF_ROUTE_GROUP = null;
+let MF_DUMPER = null;
+let MF_CURVE = null;
+let MF_TIMER = null;
+let MF_LOAD_GROUP = null;
+let MF_LOADER = null;
+let MF_LOADER_ARM = null;
+let MF_LOADER_BUCKET = null;
+let MF_BUCKET_LOAD = null;
+let MF_ORE_STREAM = null;
+let MF_DUST_GROUP = null;
+
+const MF_ROUTE_POINTS = [
+  new THREE.Vector3(17.47,17.62,-7.66),
+  new THREE.Vector3(14.74,17.17,-13.80),
+  new THREE.Vector3(10.83,16.72,-18.02),
+  new THREE.Vector3(4.56,15.81,-20.35),
+  new THREE.Vector3(-3.82,15.36,-16.58),
+  new THREE.Vector3(-6.56,14.91,-12.53),
+  new THREE.Vector3(-11.06,14.01,-5.05),
+  new THREE.Vector3(-14.11,13.55,1.25),
+  new THREE.Vector3(-20.87,13.10,14.34),
+  new THREE.Vector3(-12.74,12.20,21.63),
+  new THREE.Vector3(-1.39,11.75,19.12),
+  new THREE.Vector3(5.56,11.30,14.68),
+  new THREE.Vector3(11.41,10.39,13.10),
+  new THREE.Vector3(17.25,9.94,10.76),
+  new THREE.Vector3(18.31,9.49,3.63),
+  new THREE.Vector3(15.35,8.13,-0.64),
+  new THREE.Vector3(10.73,6.78,-2.40),
+];
+
+function MF_dispose(o){
+  try{
+    o?.traverse?.(c=>{
+      c.geometry?.dispose?.();
+      if(c.material){
+        Array.isArray(c.material) ? c.material.forEach(m=>m.dispose?.()) : c.material.dispose?.();
+      }
+    });
+  }catch(e){}
+}
+
+function MF_clean(){
+  try{
+    [fillMesh, stopeWire, pipeMesh, barricadeMesh, rockGroup, MF_ROUTE_GROUP, MF_DUMPER, MF_LOADER, MF_ORE_STREAM, MF_DUST_GROUP].forEach(o=>{
+      if(o){ scene.remove(o); MF_dispose(o); }
+    });
+    if(typeof fillMesh !== "undefined") fillMesh = null;
+    if(typeof stopeWire !== "undefined") stopeWire = null;
+    if(typeof pipeMesh !== "undefined") pipeMesh = null;
+    if(typeof barricadeMesh !== "undefined") barricadeMesh = null;
+    if(typeof rockGroup !== "undefined") rockGroup = null;
+    MF_ROUTE_GROUP = null;
+    MF_DUMPER = null;
+    MF_LOADER = null;
+    MF_LOADER_ARM = null;
+    MF_LOADER_BUCKET = null;
+    MF_BUCKET_LOAD = null;
+    MF_ORE_STREAM = null;
+    MF_DUST_GROUP = null;
+  }catch(e){}
+}
+
+function MF_mat(c,opt={}){
+  return new THREE.MeshStandardMaterial({
+    color:c,
+    roughness:opt.roughness ?? .55,
+    metalness:opt.metalness ?? .08,
+    transparent:opt.transparent ?? false,
+    opacity:opt.opacity ?? 1,
+    map:opt.map ?? null,
+    bumpMap:opt.bumpMap ?? null,
+    bumpScale:opt.bumpScale ?? 0,
+    emissive:opt.emissive ?? 0x000000,
+    emissiveIntensity:opt.emissiveIntensity ?? 0
+  });
+}
+
+function MF_noiseTexture(base="#6a5035", fleck="#2f261e", size=96, density=650){
+  const canvas = document.createElement("canvas");
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = base;
+  ctx.fillRect(0,0,size,size);
+  for(let i=0;i<density;i++){
+    const v = 20 + Math.random()*60;
+    ctx.fillStyle = Math.random()>.5 ? fleck : `rgba(${v},${v*.85},${v*.65},${.16 + Math.random()*.22})`;
+    ctx.beginPath();
+    ctx.arc(Math.random()*size, Math.random()*size, Math.random()*2.2+.35, 0, Math.PI*2);
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(2,2);
+  return tex;
+}
+
+function MF_makeRock(radius, mat){
+  const g = new THREE.DodecahedronGeometry(radius, 0);
+  const m = new THREE.Mesh(g, mat);
+  m.scale.set(1 + Math.random()*.55, .65 + Math.random()*.65, .8 + Math.random()*.55);
+  m.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  return m;
+}
+
+function MF_addWheelPair(group, x, y, zAbs, radius, width, tireMat, rimMat){
+  const tireGeo = new THREE.CylinderGeometry(radius, radius, width, 32);
+  const rimGeo = new THREE.CylinderGeometry(radius*.44, radius*.44, width+.012, 24);
+  [-zAbs, zAbs].forEach(z=>{
+    const tire = new THREE.Mesh(tireGeo, tireMat);
+    tire.rotation.x = Math.PI/2;
+    tire.position.set(x,y,z);
+    tire.castShadow = true;
+    tire.receiveShadow = true;
+    group.add(tire);
+
+    const rim = new THREE.Mesh(rimGeo, rimMat);
+    rim.rotation.x = Math.PI/2;
+    rim.position.copy(tire.position);
+    rim.castShadow = true;
+    rim.receiveShadow = true;
+    group.add(rim);
+  });
+}
+
+function MF_addBox(group, size, pos, mat, rot={x:0,y:0,z:0}){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(size[0], size[1], size[2]), mat);
+  m.position.set(pos[0], pos[1], pos[2]);
+  m.rotation.set(rot.x||0, rot.y||0, rot.z||0);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  group.add(m);
+  return m;
+}
+
+function MF_cylinderBetween(group, a, b, radius, mat, segments=12){
+  const va = new THREE.Vector3(a[0], a[1], a[2]);
+  const vb = new THREE.Vector3(b[0], b[1], b[2]);
+  const mid = va.clone().add(vb).multiplyScalar(.5);
+  const dir = vb.clone().sub(va);
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, dir.length(), segments), mat);
+  m.position.copy(mid);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.normalize());
+  m.castShadow = true;
+  m.receiveShadow = true;
+  group.add(m);
+  return m;
+}
+
+function MF_labelPlane(text, w, h, bg, fg="#111111"){
+  const canvas = document.createElement("canvas");
+  canvas.width = 256; canvas.height = 96;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0,0,256,96);
+  ctx.strokeStyle = "rgba(255,255,255,.7)";
+  ctx.lineWidth = 6;
+  ctx.strokeRect(6,6,244,84);
+  ctx.fillStyle = fg;
+  ctx.font = "bold 34px Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text,128,50);
+  const tex = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.MeshBasicMaterial({map:tex, transparent:true});
+  return new THREE.Mesh(new THREE.PlaneGeometry(w,h), mat);
+}
+
+function MF_addTireTread(group, x, zAbs, radius, tireMat){
+  [-zAbs, zAbs].forEach(z=>{
+    for(let i=0;i<14;i++){
+      const a = i / 14 * Math.PI * 2;
+      const block = new THREE.Mesh(new THREE.BoxGeometry(.045,.055,.20), tireMat);
+      block.position.set(x, .22 + Math.sin(a)*radius, z + Math.cos(a)*.085);
+      block.rotation.x = a;
+      block.rotation.z = .22;
+      group.add(block);
+    }
+  });
+}
+
+function MF_createRoute(){
+  MF_ROUTE_GROUP = new THREE.Group();
+  MF_ROUTE_GROUP.name = "ruta_paralela_delgada_aprobada";
+
+  MF_CURVE = new THREE.CatmullRomCurve3(MF_ROUTE_POINTS, false, "catmullrom", 0.22);
+  const roadTex = MF_noiseTexture("#30312d", "#171916", 96, 420);
+  roadTex.repeat.set(5,1);
+
+  const road = new THREE.Mesh(
+    new THREE.TubeGeometry(MF_CURVE, 360, .12, 16, false),
+    MF_mat(0x303332, {transparent:true, opacity:.90, roughness:.92, map:roadTex, bumpMap:roadTex, bumpScale:.025})
+  );
+  road.name = "rampa_delgada_paralela_a_curvas";
+  MF_ROUTE_GROUP.add(road);
+
+  const center = new THREE.Mesh(
+    new THREE.TubeGeometry(MF_CURVE, 360, .022, 8, false),
+    MF_mat(0xf5c542, {emissive:0xf5c542, emissiveIntensity:.55})
+  );
+  center.position.y += .07;
+  center.name = "linea_central_amarilla";
+  MF_ROUTE_GROUP.add(center);
+
+  const arrowMat = MF_mat(0xffdf57, {emissive:0xffcc33, emissiveIntensity:.55});
+  for(let t=.08; t<.94; t+=.10){
+    const p = MF_CURVE.getPoint(t);
+    const p2 = MF_CURVE.getPoint(Math.min(t+.012,1));
+    const dir = new THREE.Vector3().subVectors(p2,p).normalize();
+    const a = new THREE.Mesh(new THREE.ConeGeometry(.11,.32,16), arrowMat);
+    a.position.copy(p);
+    a.position.y += .16;
+    a.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
+    a.name = "flecha_ruta";
+    MF_ROUTE_GROUP.add(a);
+  }
+
+  scene.add(MF_ROUTE_GROUP);
+}
+
+function MF_createSandvikSTL(){
+  const group = new THREE.Group();
+  group.name = "DUMPER_RIGIDO_MINERO_DETALLADO";
+
+  const paintTex = MF_noiseTexture("#e5a51f", "#8f5a0b", 64, 190);
+  const tireTex = MF_noiseTexture("#151515", "#050505", 64, 250);
+  const oreTex = MF_noiseTexture("#624b34", "#231b14", 96, 800);
+  const orange = MF_mat(0xe5a51f, {roughness:.58, metalness:.08, map:paintTex, bumpMap:paintTex, bumpScale:.018});
+  const orange2 = MF_mat(0xffbf2d, {roughness:.54, metalness:.05, map:paintTex, bumpMap:paintTex, bumpScale:.014});
+  const darkOrange = MF_mat(0xb35b12, {roughness:.66, metalness:.05, map:paintTex, bumpMap:paintTex, bumpScale:.012});
+  const black = MF_mat(0x111315, {roughness:.88, metalness:.03, map:tireTex, bumpMap:tireTex, bumpScale:.02});
+  const rim = MF_mat(0x4a4f55, {roughness:.55, metalness:.25});
+  const darkSteel = MF_mat(0x262a2f, {roughness:.55, metalness:.25});
+  const load = MF_mat(0x5e4630, {roughness:.98, map:oreTex, bumpMap:oreTex, bumpScale:.035});
+  const loadLight = MF_mat(0x80613d, {roughness:.94, map:oreTex, bumpMap:oreTex, bumpScale:.025});
+  const loadDark = MF_mat(0x3f3326, {roughness:.99, map:oreTex, bumpMap:oreTex, bumpScale:.04});
+  const glass = MF_mat(0x5f9fc8, {transparent:true, opacity:.55, roughness:.18, metalness:.02});
+  const lightMat = MF_mat(0xfff2a0, {emissive:0xffcc44, emissiveIntensity:1.4});
+  const redLight = MF_mat(0xff3030, {emissive:0xff2020, emissiveIntensity:.8});
+  const railMat = MF_mat(0xff6a1f, {roughness:.38, metalness:.14});
+
+  MF_addBox(group, [2.95,.18,.86], [0,.34,0], black);
+  MF_addBox(group, [1.18,.16,.92], [.95,.50,0], darkSteel);
+  MF_addBox(group, [.08,.50,.86], [1.70,.66,0], black);
+
+  const bed = new THREE.Mesh(new THREE.BoxGeometry(1.70,.46,.94), orange);
+  bed.position.set(-.42,.78,0);
+  bed.rotation.z = -.08;
+  group.add(bed);
+
+  const bedLip = new THREE.Mesh(new THREE.BoxGeometry(1.88,.08,1.08), darkOrange);
+  bedLip.position.set(-.42,1.08,0);
+  bedLip.rotation.z = -.08;
+  group.add(bedLip);
+
+  [-.49,.49].forEach(z=>{
+    const side = new THREE.Mesh(new THREE.BoxGeometry(1.72,.40,.045), darkOrange);
+    side.position.set(-.42,.92,z);
+    side.rotation.z = -.08;
+    group.add(side);
+    MF_addBox(group, [1.48,.035,.035], [-.48,1.18,z*1.08], railMat);
+    MF_addBox(group, [.035,.32,.035], [-1.20,1.02,z*1.08], railMat);
+    MF_addBox(group, [.035,.32,.035], [.25,1.02,z*1.08], railMat);
+  });
+
+  MF_addBox(group, [.22,.38,1.02], [-1.32,.84,0], orange2, {z:.28});
+  MF_addBox(group, [.08,.08,1.08], [-1.36,1.11,0], darkOrange);
+
+  MF_LOAD_GROUP = new THREE.Group();
+  MF_LOAD_GROUP.name = "carga_visible_del_dumper";
+  for(let i=0;i<96;i++){
+    const mat = i%5===0 ? loadLight : i%3===0 ? loadDark : load;
+    const rock = MF_makeRock(.025 + Math.random()*.065, mat);
+    const layer = i / 96;
+    rock.position.set(
+      -1.06 + Math.random()*1.30,
+      1.02 + Math.random()*.34 + layer*.12,
+      -.39 + Math.random()*.78
+    );
+    MF_LOAD_GROUP.add(rock);
+  }
+  group.add(MF_LOAD_GROUP);
+
+  MF_addBox(group, [.78,.28,.72], [.92,.63,0], orange2);
+  MF_addBox(group, [.68,.62,.62], [1.07,.95,0], darkSteel);
+  MF_addBox(group, [.82,.08,.76], [1.05,1.30,0], orange2);
+
+  const windshield = new THREE.Mesh(new THREE.BoxGeometry(.04,.38,.50), glass);
+  windshield.position.set(1.43,1.00,0);
+  group.add(windshield);
+
+  const sideWindow = new THREE.Mesh(new THREE.BoxGeometry(.30,.32,.04), glass);
+  sideWindow.position.set(1.10,1.02,.33);
+  group.add(sideWindow);
+
+  const sideWindow2 = sideWindow.clone();
+  sideWindow2.position.z = -.33;
+  group.add(sideWindow2);
+
+  MF_addBox(group, [.58,.34,.76], [1.52,.60,0], orange2);
+  MF_addBox(group, [.12,.20,.90], [1.85,.43,0], black);
+  MF_addBox(group, [.05,.36,.56], [1.91,.64,0], darkSteel);
+
+  [-.92, -.18, .86].forEach(x=>{
+    MF_addWheelPair(group, x, .22, .50, .23, .18, black, rim);
+    MF_addTireTread(group, x, .50, .23, black);
+  });
+
+  [-.92, -.18, .86].forEach(x=>{
+    [-.52,.52].forEach(z=>MF_addBox(group, [.46,.065,.26], [x,.48,z], black));
+  });
+
+  const axleGeo = new THREE.CylinderGeometry(.035,.035,1.18,12);
+  [-.82, -.15, .86].forEach(x=>{
+    const axle = new THREE.Mesh(axleGeo, rim);
+    axle.rotation.x = Math.PI/2;
+    axle.position.set(x,.22,0);
+    group.add(axle);
+  });
+
+  const l1 = new THREE.Mesh(new THREE.SphereGeometry(.055,16,16), lightMat);
+  const l2 = new THREE.Mesh(new THREE.SphereGeometry(.055,16,16), lightMat);
+  l1.position.set(1.76,.58,-.22);
+  l2.position.set(1.76,.58,.22);
+  group.add(l1); group.add(l2);
+
+  const r1 = new THREE.Mesh(new THREE.SphereGeometry(.045,12,12), redLight);
+  const r2 = new THREE.Mesh(new THREE.SphereGeometry(.045,12,12), redLight);
+  r1.position.set(-1.24,.55,-.38);
+  r2.position.set(-1.24,.55,.38);
+  group.add(r1); group.add(r2);
+
+  const railGeo = new THREE.CylinderGeometry(.018,.018,.86,10);
+  const rail1 = new THREE.Mesh(railGeo, railMat);
+  rail1.rotation.x = Math.PI/2;
+  rail1.position.set(.62,1.34,.43);
+  group.add(rail1);
+  const rail2 = rail1.clone();
+  rail2.position.z = -.43;
+  group.add(rail2);
+
+  for(let i=0;i<5;i++){
+    MF_addBox(group, [.34,.024,.035], [1.42,.42 + i*.10,.50], railMat);
+    MF_addBox(group, [.34,.024,.035], [1.42,.42 + i*.10,-.50], railMat);
+  }
+  MF_cylinderBetween(group, [1.70,.45,.55], [1.70,1.26,.55], .014, railMat);
+  MF_cylinderBetween(group, [1.70,.45,-.55], [1.70,1.26,-.55], .014, railMat);
+  MF_cylinderBetween(group, [.72,1.28,.44], [1.72,1.28,.44], .014, railMat);
+  MF_cylinderBetween(group, [.72,1.28,-.44], [1.72,1.28,-.44], .014, railMat);
+
+  const grille = new THREE.Mesh(new THREE.BoxGeometry(.035,.26,.48), black);
+  grille.position.set(1.79,.68,0);
+  group.add(grille);
+  for(let i=0;i<5;i++){
+    MF_addBox(group, [.018,.025,.48], [1.83,.56+i*.055,0], rim);
+  }
+
+  const decal = MF_labelPlane("R60", .42, .16, "#20242a", "#f2f2f2");
+  decal.position.set(-.53, .94, .535);
+  decal.rotation.set(0,0,0);
+  group.add(decal);
+  const brand = MF_labelPlane("HAUL", .45, .15, "#20242a", "#f5c542");
+  brand.position.set(.98,.68,.545);
+  group.add(brand);
+
+  group.scale.setScalar(1.22);
+  return group;
+}
+
+function MF_createLoader(){
+  const group = new THREE.Group();
+  group.name = "PALA_HIDRAULICA_MINERA_DETALLADA";
+
+  const loaderTex = MF_noiseTexture("#dca72b", "#765211", 64, 220);
+  const tireTex = MF_noiseTexture("#151515", "#050505", 64, 250);
+  const oreTex = MF_noiseTexture("#604832", "#241b14", 96, 850);
+  const yellow = MF_mat(0xe0a62a, {roughness:.54, metalness:.06, map:loaderTex, bumpMap:loaderTex, bumpScale:.014});
+  const yellow2 = MF_mat(0xf4bd3a, {roughness:.50, metalness:.05, map:loaderTex, bumpMap:loaderTex, bumpScale:.014});
+  const black = MF_mat(0x111315, {roughness:.88, map:tireTex, bumpMap:tireTex, bumpScale:.02});
+  const steel = MF_mat(0x606872, {roughness:.38, metalness:.28});
+  const darkSteel = MF_mat(0x23272d, {roughness:.58, metalness:.22});
+  const hoseMat = MF_mat(0x0a0b0c, {roughness:.72, metalness:.06});
+  const glass = MF_mat(0x5f9fc8, {transparent:true, opacity:.50, roughness:.18});
+  const rockMat = MF_mat(0x5e4630, {roughness:.98, map:oreTex, bumpMap:oreTex, bumpScale:.035});
+  const rockLight = MF_mat(0x80613d, {roughness:.94, map:oreTex, bumpMap:oreTex, bumpScale:.026});
+  const rockDark = MF_mat(0x3a3025, {roughness:.99, map:oreTex, bumpMap:oreTex, bumpScale:.04});
+
+  MF_addBox(group, [1.58,.20,.92], [-.15,.18,0], darkSteel);
+  [-.37,.37].forEach(z=>{
+    MF_addBox(group, [1.62,.26,.22], [-.15,.12,z], black);
+    for(let i=0;i<12;i++){
+      MF_addBox(group, [.10,.055,.245], [-.86+i*.13,.23,z], darkSteel, {z:.08});
+    }
+    for(let i=0;i<7;i++){
+      const roller = new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.24,16), steel);
+      roller.rotation.x = Math.PI/2;
+      roller.position.set(-.70+i*.22,.12,z);
+      group.add(roller);
+    }
+  });
+
+  MF_addBox(group, [1.18,.36,.76], [-.12,.47,0], yellow);
+  MF_addBox(group, [.74,.48,.74], [-.42,.72,0], yellow2);
+  MF_addBox(group, [.42,.60,.46], [.28,.82,.22], darkSteel);
+  MF_addBox(group, [.045,.35,.34], [.50,.87,.22], glass);
+  MF_addBox(group, [.24,.33,.045], [.30,.87,.46], glass);
+  MF_addBox(group, [.62,.08,.54], [.28,1.15,.22], yellow2);
+  MF_addBox(group, [.12,.45,.10], [.03,.80,.53], black);
+  for(let i=0;i<5;i++) MF_addBox(group, [.22,.018,.035], [.03,.58+i*.085,.59], black);
+
+  const logo = MF_labelPlane("6060", .34, .13, "#f1c23e", "#232323");
+  logo.position.set(-.23,.72,.405);
+  group.add(logo);
+
+  MF_LOADER_ARM = new THREE.Group();
+  MF_LOADER_ARM.name = "pluma_y_brazo_pala";
+  MF_LOADER_ARM.position.set(.34,.86,0);
+  const armMat = MF_mat(0xe0a62a, {roughness:.46, metalness:.08, map:loaderTex, bumpMap:loaderTex, bumpScale:.012});
+  [-.13,.13].forEach(z=>{
+    MF_cylinderBetween(MF_LOADER_ARM, [0,0,z], [.72,.38,z], .045, armMat, 12);
+    MF_cylinderBetween(MF_LOADER_ARM, [.66,.35,z], [1.18,.10,z], .038, armMat, 12);
+    MF_cylinderBetween(MF_LOADER_ARM, [.10,-.07,z*.8], [.72,.30,z*.8], .020, steel, 10);
+    MF_cylinderBetween(MF_LOADER_ARM, [.72,.27,z*.8], [1.10,.04,z*.8], .018, steel, 10);
+  });
+  MF_cylinderBetween(MF_LOADER_ARM, [.08,.04,.18], [.70,.42,.18], .012, hoseMat, 8);
+  MF_cylinderBetween(MF_LOADER_ARM, [.08,.02,-.18], [.70,.40,-.18], .012, hoseMat, 8);
+  MF_cylinderBetween(MF_LOADER_ARM, [.70,.38,.18], [1.16,.10,.18], .010, hoseMat, 8);
+  MF_cylinderBetween(MF_LOADER_ARM, [.70,.36,-.18], [1.16,.08,-.18], .010, hoseMat, 8);
+
+  MF_LOADER_BUCKET = new THREE.Group();
+  MF_LOADER_BUCKET.name = "cucharon_dentado_pala";
+  MF_LOADER_BUCKET.position.set(1.22,.06,0);
+  MF_addBox(MF_LOADER_BUCKET, [.46,.26,.66], [0,0,0], MF_mat(0x6b737c, {roughness:.42, metalness:.35}), {z:-.20});
+  MF_addBox(MF_LOADER_BUCKET, [.54,.052,.76], [.20,-.12,0], steel, {z:-.20});
+  MF_addBox(MF_LOADER_BUCKET, [.06,.30,.72], [-.22,.06,0], darkSteel, {z:-.20});
+  for(let i=0;i<6;i++){
+    const tooth = new THREE.Mesh(new THREE.ConeGeometry(.040,.18,8), steel);
+    tooth.rotation.z = -Math.PI/2;
+    tooth.position.set(.50,-.17,-.31 + i*.124);
+    MF_LOADER_BUCKET.add(tooth);
+  }
+
+  MF_BUCKET_LOAD = new THREE.Group();
+  for(let i=0;i<30;i++){
+    const mat = i%3===0 ? rockLight : i%4===0 ? rockDark : rockMat;
+    const rock = MF_makeRock(.035 + Math.random()*.035, mat);
+    rock.position.set(-.02 + Math.random()*.34, .04 + Math.random()*.16, -.25 + Math.random()*.50);
+    MF_BUCKET_LOAD.add(rock);
+  }
+  MF_LOADER_BUCKET.add(MF_BUCKET_LOAD);
+  MF_LOADER_ARM.add(MF_LOADER_BUCKET);
+  group.add(MF_LOADER_ARM);
+
+  const pile = new THREE.Group();
+  pile.name = "pila_mineral_granular";
+  for(let i=0;i<130;i++){
+    const mat = i%4===0 ? rockLight : i%5===0 ? rockDark : rockMat;
+    const rock = MF_makeRock(.035 + Math.random()*.095, mat);
+    const a = Math.random()*Math.PI*2;
+    const r = Math.random()*1.0;
+    rock.position.set(1.34 + Math.cos(a)*r*.82, .08 + Math.random()*.38*(1-r*.38), Math.sin(a)*r*.50);
+    pile.add(rock);
+  }
+  group.add(pile);
+
+  group.position.set(0,0,0);
+  group.rotation.y = 0;
+  group.scale.setScalar(.96);
+  MF_setLoaderProgress(0);
+  return group;
+}
+
+function MF_createOreStream(){
+  const group = new THREE.Group();
+  group.name = "flujo_visual_mineral_cucharon_dumper";
+  const oreTex = MF_noiseTexture("#61472f", "#21170f", 96, 900);
+  const dustMat = MF_mat(0x9a8060, {transparent:true, opacity:.18, roughness:1});
+  const oreMats = [
+    MF_mat(0x5e4630, {roughness:.98, map:oreTex, bumpMap:oreTex, bumpScale:.035}),
+    MF_mat(0x80613d, {roughness:.94, map:oreTex, bumpMap:oreTex, bumpScale:.026}),
+    MF_mat(0x3a3025, {roughness:.99, map:oreTex, bumpMap:oreTex, bumpScale:.04})
+  ];
+  for(let i=0;i<42;i++){
+    const r = MF_makeRock(.025 + Math.random()*.045, oreMats[i%oreMats.length]);
+    r.userData.phase = Math.random();
+    r.userData.side = (Math.random()-.5);
+    r.userData.depth = (Math.random()-.5);
+    group.add(r);
+  }
+  for(let i=0;i<18;i++){
+    const d = new THREE.Mesh(new THREE.SphereGeometry(.06 + Math.random()*.10, 12, 8), dustMat);
+    d.userData.phase = Math.random();
+    d.userData.side = (Math.random()-.5);
+    d.userData.depth = (Math.random()-.5);
+    group.add(d);
+  }
+  group.visible = false;
+  scene.add(group);
+  return group;
+}
+
+function MF_updateOreStream(loadPct){
+  if(!MF_ORE_STREAM || !MF_CURVE) return;
+  const p = Math.max(0, Math.min(100, parseFloat(loadPct) || 0)) / 100;
+  const active = p > .04 && p < .96;
+  MF_ORE_STREAM.visible = active;
+  if(!active) return;
+
+  const start = MF_CURVE.getPoint(1);
+  const prev = MF_CURVE.getPoint(.975);
+  const dir = new THREE.Vector3().subVectors(start, prev).normalize();
+  const side = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
+  const lateral = side.clone().multiplyScalar(1.25);
+  const high = start.clone().add(lateral).add(new THREE.Vector3(0,1.65,0));
+  const low = start.clone().add(side.clone().multiplyScalar(.20)).add(new THREE.Vector3(0,.82,0));
+  const pulse = (Date.now()%1400)/1400;
+
+  MF_ORE_STREAM.children.forEach((obj,i)=>{
+    const local = (obj.userData.phase + pulse) % 1;
+    const arc = high.clone().lerp(low, local);
+    arc.y += Math.sin(local*Math.PI)*.18;
+    arc.add(side.clone().multiplyScalar(obj.userData.side*.30));
+    arc.add(dir.clone().multiplyScalar(obj.userData.depth*.28));
+    obj.position.copy(arc);
+    const s = obj.geometry.type === "SphereGeometry" ? (.55 + local*.9) : 1;
+    obj.scale.setScalar(s);
+    obj.rotation.x += .03 + i*.0007;
+    obj.rotation.z += .025;
+    obj.visible = obj.geometry.type === "SphereGeometry" ? local>.18 : true;
+  });
+}
+
+function MF_placeLoaderAtStart(){
+  if(!MF_LOADER || !MF_CURVE) return;
+  const start = MF_CURVE.getPoint(1);
+  const prev = MF_CURVE.getPoint(.975);
+  const dir = new THREE.Vector3().subVectors(start, prev).normalize();
+  const side = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
+  const loaderPos = start.clone()
+    .add(side.multiplyScalar(3.00))
+    .add(dir.clone().multiplyScalar(.15));
+
+  MF_LOADER.position.set(loaderPos.x, start.y + .12, loaderPos.z);
+
+  const toDumper = new THREE.Vector3().subVectors(start, loaderPos).normalize();
+  MF_LOADER.rotation.y = Math.atan2(-toDumper.z, toDumper.x);
+  MF_LOADER.rotation.z = 0;
+  MF_LOADER.rotation.x = 0;
+}
+
+function MF_setLoaderProgress(loadPct){
+  if(!MF_LOADER_ARM || !MF_LOADER_BUCKET) return;
+  const p = Math.max(0, Math.min(100, parseFloat(loadPct) || 0)) / 100;
+  const lift = Math.sin(p * Math.PI);
+  MF_LOADER_ARM.rotation.z = .10 + lift*.48;
+  MF_LOADER_BUCKET.rotation.z = -.22 + lift*.72;
+  MF_LOADER_ARM.position.y = .88 + lift*.28;
+  if(MF_BUCKET_LOAD) MF_BUCKET_LOAD.visible = p < .82;
+}
+
+function MF_setLoad(pct){
+  const p = Math.max(0, Math.min(100, parseFloat(pct) || 0));
+  if(!MF_LOAD_GROUP) return;
+  const s = Math.max(.04, p / 100);
+  MF_LOAD_GROUP.scale.set(1, s, 1);
+  MF_LOAD_GROUP.position.y = (1 - s) * -.28;
+  MF_LOAD_GROUP.visible = p > 0;
+  MF_setLoaderProgress(p);
+  MF_updateOreStream(p);
+}
+
+function MF_getHaulHours(){
+  const x = latest?.x || getX();
+  const distM = Math.max(x.distLHD || 0, 1);
+  const speedKmh = Math.max(x.velCargado || 1, .1);
+  return (distM / 1000) / speedKmh;
+}
+
+function MF_setDumper(t, uphill=false){
+  if(!MF_DUMPER || !MF_CURVE) return;
+  t = Math.max(0, Math.min(1,t));
+
+  const p = MF_CURVE.getPoint(t);
+  const p2 = MF_CURVE.getPoint(Math.max(0, Math.min(1, t + (uphill ? -.012 : .012))));
+  const p0 = MF_CURVE.getPoint(Math.max(0, Math.min(1, t + (uphill ? .012 : -.012))));
+
+  // El camión se apoya sobre la superficie del tubo/rampa.
+  MF_DUMPER.position.set(p.x, p.y + .32, p.z);
+
+  const dir = new THREE.Vector3().subVectors(p2,p0).normalize();
+
+  // El dumper queda con su largo sobre el eje X y se alinea con la ruta.
+  const yaw = Math.atan2(-dir.z, dir.x);
+  MF_DUMPER.rotation.set(0, yaw, 0);
+
+  // Mantiene el equipo apoyado visualmente sin ladearlo sobre la rampa.
+  MF_DUMPER.rotation.z = 0;
+}
+
+function MF_updateCycleUI(loadPct, routePct=0, phase="Carga manual"){
+  const p = Math.max(0, Math.min(100, parseFloat(loadPct) || 0));
+  const route = Math.max(0, Math.min(100, parseFloat(routePct) || 0));
+  const overall = Math.round((p * .5) + (route * .5));
+  const fb = document.getElementById("fillBadge");
+  if(fb) fb.innerText = p + "%";
+
+  const fl = document.getElementById("fillLabel3d");
+  if(fl) fl.innerText = phase + " | Carga: " + Math.round(p) + "% | Ruta: " + Math.round(route) + "%";
+
+  const ka = document.getElementById("k3dAvance");
+  if(ka) ka.innerText = overall + "%";
+
+  const pf = document.getElementById("progressFill");
+  if(pf){ pf.style.width = overall + "%"; pf.innerText = overall + "%"; }
+
+  MF_setLoad(p);
+
+  const k1 = document.getElementById("k3dColocado");
+  const k2 = document.getElementById("k3dPendiente");
+  const k3 = document.getElementById("k3dTiempo");
+  if(latest){
+    const loadHours = latest.r.tBombeo * p / 100;
+    const haulHours = MF_getHaulHours() * route / 100;
+    if(k1) k1.innerText = fmt0(latest.r.volRelleno * p / 100);
+    if(k2) k2.innerText = fmt0(latest.r.volRelleno * (1 - p / 100));
+    if(k3) k3.innerText = fmt(loadHours + haulHours, 2);
+  }
+}
+
+function MF_updateUI(pct){
+  MF_updateCycleUI(pct, 0, "Carga manual");
+}
+
+function MF_apply(){
+  if(!scene) return;
+  MF_clean();
+  MF_createRoute();
+  MF_DUMPER = MF_createSandvikSTL();
+  scene.add(MF_DUMPER);
+  MF_LOADER = MF_createLoader();
+  scene.add(MF_LOADER);
+  MF_ORE_STREAM = MF_createOreStream();
+
+  const pct = parseFloat(document.getElementById("fillRange")?.value ?? 0);
+  MF_updateUI(pct);
+  MF_setDumper(1, true);
+  MF_placeLoaderAtStart();
+
+  try{
+    camera.position.set(32,30,42);
+    controls?.target?.set?.(0,13,0);
+    controls?.update?.();
+  }catch(e){}
+}
+
+window.actualizarFill3D = function(p){
+  MF_updateUI(p);
+  MF_setDumper(1, true);
+  MF_placeLoaderAtStart();
+};
+
+window.animarLlenado = window.animarAvance = function(){
+  let p = 0;
+  let route = 0;
+  const sl = document.getElementById("fillRange");
+  const status = document.getElementById("sequenceStatus");
+  const btn = document.getElementById("sequenceBtn");
+  const speed = Math.max(parseFloat(document.getElementById("speedSelect")?.value || 1), .25);
+  clearInterval(MF_TIMER);
+  if(btn) btn.innerText = "Simulando...";
+  if(status) status.innerText = "Cargando dumper";
+  if(sl) sl.value = 0;
+  MF_updateCycleUI(0, 0, "Cargando");
+  MF_setDumper(1, true);
+  MF_TIMER = setInterval(()=>{
+    if(p < 100){
+      p += 2 * speed;
+      if(p > 100) p = 100;
+      if(sl) sl.value = p;
+      MF_updateCycleUI(p, 0, "Cargando");
+      MF_setDumper(1, true);
+      if(status) status.innerText = "Cargando dumper: " + Math.round(p) + "%";
+      return;
+    }
+
+    route += 1.2 * speed;
+    if(route > 100) route = 100;
+    if(status) status.innerText = "Subiendo por rampa: " + Math.round(route) + "%";
+    MF_updateCycleUI(100, route, "Subiendo");
+    MF_setDumper(1 - route/100, true);
+    if(route >= 100){
+      MF_setDumper(0, true);
+      clearInterval(MF_TIMER);
+      if(status) status.innerText = "Ciclo completado";
+      if(btn) btn.innerText = "Repetir ciclo";
+    }
+  },45);
+};
+
+window.resetCamara = function(){
+  try{
+    camera.position.set(32,30,42);
+    controls?.target?.set?.(0,13,0);
+    controls?.update?.();
+  }catch(e){}
+};
+
+const oldCalc = window.calcularTodo;
+if(typeof oldCalc === "function"){
+  window.calcularTodo = function(){
+    oldCalc();
+    setTimeout(MF_apply,700);
+  };
+}
+
+window.addEventListener("load",()=>{
+  setTimeout(MF_apply,1600);
+  setTimeout(MF_apply,3000);
+});
+</script>
+
+
+</body>
+</html>
